@@ -154,3 +154,10 @@ model LiveAnswer {
   answeredAt DateTime @default(now())
   @@unique([participantId, questionIndex])
 }
+
+model RateLimit {
+  key String @id
+  count Int
+  expiresAt DateTime
+  @@index([expiresAt])
+}

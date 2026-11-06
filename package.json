@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx server.ts --dev",
     "build": "prisma generate && next build --webpack",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "tsx server.ts",
+    "lint": "eslint",
+    "test": "tsx --test tests/*.test.ts",
+    "db:migrate": "prisma migrate deploy"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
@@ -14,6 +16,7 @@
     "@hookform/resolvers": "^7.0.3",
     "@neon/config": "^1.11.3",
     "@neon/env": "^1.6.15",
+    "@next/env": "^16.4.5",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "argon2": "^0.45.2",
@@ -29,6 +32,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-hook-form": "^7.91.0",
+    "server-only": "^0.0.1",
     "shadcn": "^4.23.0",
     "socket.io": "^4.8.4",
     "socket.io-client": "^4.8.4",
@@ -39,11 +43,13 @@
     "@tailwindcss/postcss": "^4.3.5",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
