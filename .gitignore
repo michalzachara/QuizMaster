@@ -36,6 +36,7 @@ yarn-error.log*
 
 # Local Codex settings, caches and session artifacts
 /.codex/
+/generated/prisma/
 
 # vercel
 .vercel
