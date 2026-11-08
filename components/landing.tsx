@@ -2,9 +2,12 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, ArrowUpRight, Zap, Radio, BookOpen, ShieldCheck, Trophy, Check, GraduationCap, Presentation, ListChecks, Clock3, Palette, MousePointer2, ChevronDown } from "lucide-react";
+import { LandingDemo, LandingTools } from "./landing-interactive";
 import { ThemeSwitch } from "./providers";
 
 const faqs = [
+  ["Czy jest limit liczby pytań?", "Edytor nie ogranicza liczby pytań. Możesz dodawać kolejne, duplikować je i zmieniać ich kolejność. Każde pytanie ma własny czas i liczbę punktów."],
+  ["Co jeśli link wygaśnie w trakcie testu?", "Po wygaśnięciu linku nie można rozpocząć nowego podejścia. Jeśli test został rozpoczęty wcześniej, uczeń zachowuje swój pełny limit czasu: sumę czasów pytań plus 5 minut."],
   ["Czy mogę korzystać z QuizMaster na telefonie?", "Tak. Quizy, testy i panel działają w przeglądarce na telefonie, tablecie i komputerze. Nie musisz instalować aplikacji."],
   ["Jak założyć konto nauczyciela?", "Podczas rejestracji wybierz Nauczyciel, wpisz imię, adres e-mail i hasło. Konto jest gotowe od razu — bez zaproszenia i bez zatwierdzania przez administratora."],
   ["Czym różni się quiz na żywo od testu?", "W rozgrywce na żywo nauczyciel prowadzi wszystkich przez te same pytania, a każde z nich ma własny licznik. Test indywidualny otwierasz z linku i rozwiązujesz samodzielnie w ustalonym limicie czasu."],
@@ -27,9 +30,9 @@ export function Landing() {
           <div className="hero-actions"><Link className="link-button large" href="/register">Zacznij z QuizMaster <ArrowRight size={20}/></Link><Link className="secondary-link" href="/join"><Radio size={20}/> Mam kod do quizu</Link></div>
           <div className="hero-note"><Check size={18}/> Dla uczniów i nauczycieli <span>•</span> W przeglądarce, bez instalacji</div>
         </motion.div>
-        <motion.div initial={{ opacity: 0, rotate: 3 }} animate={{ opacity: 1, rotate: 0 }} transition={{ duration: .6 }} className="hero-visual" aria-label="Ilustracja przykładowego pytania">
+        <motion.div initial={{ opacity: 0, rotate: 3 }} animate={{ opacity: 1, rotate: 0 }} transition={{ duration: .6 }} className="hero-visual" aria-label="Interaktywny quiz demonstracyjny">
           <div className="floating-tag"><Zap size={19}/> Ciekawość to supermoc</div>
-          <div className="example-card"><div className="example-top"><span>ODKRYWAMY ŚWIAT</span><span>01 / 03</span></div><div className="example-progress"><i/></div><div className="example-icon">🌍</div><h2>Która planeta jest naszym domem?</h2><div className="example-options"><span><b>A</b>Mars</span><span className="correct"><b>B</b>Ziemia<Check size={20}/></span><span><b>C</b>Wenus</span><span><b>D</b>Jowisz</span></div><small>Przykładowe pytanie. Twój quiz może być o wszystkim.</small></div>
+          <LandingDemo/>
           <div className="floating-score"><Trophy size={28}/><div>Małe zwycięstwa.<br/><strong>Wielka motywacja.</strong></div></div><div className="orb orb-one"/><div className="orb orb-two"/>
         </motion.div>
       </section>
@@ -50,11 +53,12 @@ export function Landing() {
         </div>
       </section>
       <section className="possibilities" id="mozliwosci"><div className="section-heading"><span className="eyebrow">WSZYSTKO W JEDNYM MIEJSCU</span><h2>Mniej organizowania.<br/>Więcej uczenia.</h2><p>Od pierwszego pytania do ostatniego punktu — spójna przestrzeń dla obu stron lekcji.</p></div><div className="feature-bento">
-        <article className="bento-editor"><span className="feature-icon violet"><ListChecks/></span><h3>Twoje pytania, Twój styl.</h3><p>Jednokrotny wybór, wielokrotny wybór i prawda/fałsz. Zmieniaj kolejność pytań, duplikuj quizy i korzystaj z podglądu przed publikacją.</p><div className="question-types"><span><span>A</span> Jedna odpowiedź <Check size={18}/></span><span><ListChecks size={20}/> Kilka odpowiedzi <Check size={18}/></span><span><Check size={20}/> Prawda / Fałsz</span></div></article>
-        <article className="bento-themes"><Palette size={30}/><h3>Dobierz klimat do siebie.</h3><p>Jasny do codziennej pracy. Ciemny na wieczór. Neonowy, gdy chcesz więcej energii.</p><div className="theme-samples" aria-label="Trzy dostępne motywy"><span className="sample-light">Aa<small>Jasny</small></span><span className="sample-dark">Aa<small>Ciemny</small></span><span className="sample-neon">Aa<small>Neon</small></span></div></article>
+        <article className="bento-editor"><span className="feature-icon violet"><ListChecks/></span><h3>Twoje pytania, Twój styl.</h3><p>Jednokrotny wybór, wielokrotny wybór i prawda/fałsz. Dodawaj pytania bez limitu liczby, zmieniaj ich kolejność, duplikuj quizy i korzystaj z podglądu przed publikacją.</p><div className="question-types"><span><span>A</span> Jedna odpowiedź <Check size={18}/></span><span><ListChecks size={20}/> Kilka odpowiedzi <Check size={18}/></span><span><Check size={20}/> Prawda / Fałsz</span></div></article>
+        <article className="bento-themes"><Palette size={30}/><h3>Dobierz klimat do siebie.</h3><p>Biały dla przejrzystości. Ciemny dla skupienia. Neonowy dla energii. W ustawieniach dopasujesz też dźwięki, animacje i wielkość tekstu.</p><div className="theme-samples" aria-label="Trzy dostępne motywy"><span className="sample-light">Aa<small>Biały</small></span><span className="sample-dark">Aa<small>Ciemny</small></span><span className="sample-neon">Aa<small>Neon</small></span></div></article>
         <article className="bento-safety"><ShieldCheck size={30}/><h3>Uczciwe zasady gry.</h3><p>Poprawne odpowiedzi pozostają na serwerze do momentu ich ujawnienia. Punkty nie zależą od danych wpisanych w przeglądarce.</p></article>
         <article className="bento-history"><Trophy size={30}/><h3>Wyniki, do których wrócisz.</h3><p>Po lekcji nic nie ginie. Historia testów i sesji pozwala wrócić do rezultatów, zamiast zapisywać je na kartce.</p><Link href="/register">Zbuduj swoją historię <ArrowUpRight size={20}/></Link></article>
       </div></section>
+      <LandingTools/>
       <section className="roles-section"><div><span className="eyebrow">PO DWÓCH STRONACH TEJ SAMEJ LEKCJI</span><h2>Ty wybierasz rolę.<br/>My dajemy przestrzeń.</h2><p>Wybierz typ konta przy rejestracji i zacznij od razu. Bez zaproszeń, administratora i czekania na aktywację.</p><Link className="link-button large" href="/register">Wybierz swoją rolę <ArrowRight size={19}/></Link></div><div className="role-feature-list"><article><Presentation size={27}/><div><h3>Jestem nauczycielem</h3><p>Tworzę quizy, prowadzę rozgrywki, udostępniam testy i przeglądam wyniki swoich uczniów.</p></div></article><article><GraduationCap size={29}/><div><h3>Jestem uczniem</h3><p>Dołączam kodem lub linkiem, rozwiązuję pytania i sprawdzam swoje wyniki w jednym panelu.</p></div></article></div></section>
       <section className="faq-section" id="pytania"><div className="section-heading"><span className="eyebrow">JESZCZE JEDNO PYTANIE?</span><h2>Warto wiedzieć na start.</h2></div><div className="faq-list">{faqs.map(([question, answer]) => <details key={question}><summary>{question}<ChevronDown size={22}/></summary><p>{answer}</p></details>)}</div></section>
       <section className="landing-cta"><span className="cta-star" aria-hidden="true">✦</span><span className="eyebrow">NASTĘPNA ŚWIETNA LEKCJA ZACZYNA SIĘ TUTAJ</span><h2>Zrób miejsce<br/>na ciekawość.</h2><p>Twórz, odkrywaj i ucz się razem. Reszta zaczyna się od jednego pytania.</p><Link href="/register" className="link-button large">Dołącz do QuizMaster <ArrowRight size={20}/></Link><small>Masz już konto? <Link href="/login">Zaloguj się →</Link></small></section>
