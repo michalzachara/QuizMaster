@@ -1,6 +1,6 @@
 import { database } from "./db";
 import { AppError, type Actor, teacher, rateLimit } from "./security";
-import { type Snapshot, publicQuestion, scoreAnswer, selectionSchema } from "./validation";
+import { type Snapshot, publicQuestion, scoreTimedAnswer, selectionSchema } from "./validation";
 import { z } from "zod";
 
 export async function joinGame(user: Actor, pin: string) {
@@ -51,10 +51,10 @@ export async function gameCommand(user: Actor, id: string, input: unknown) {
     if (command.action === "answer") {
       const participant = await tx.participant.findUnique({ where: { gameId_userId: { gameId: id, userId: user.id } } });
       if (!participant || user.role !== "STUDENT") throw new AppError("Brak uprawnień.", 403);
-      if (game.status !== "QUESTION" || !game.deadline || now >= game.deadline || command.questionIndex !== game.questionIndex) throw new AppError("Czas na odpowiedź upłynął.", 409);
+      if (game.status !== "QUESTION" || !game.deadline || !game.questionStartedAt || now >= game.deadline || command.questionIndex !== game.questionIndex) throw new AppError("Czas na odpowiedź upłynął.", 409);
       const q = snapshot.questions[game.questionIndex]; const selected = command.selectedIds ?? [];
       if (selected.some(value => !q.options.some(o => o.id === value)) || (q.type !== "MULTIPLE" && selected.length !== 1)) throw new AppError("Nieprawidłowa odpowiedź.");
-      await tx.liveAnswer.create({ data: { participantId: participant.id, questionIndex: game.questionIndex, selectedIds: selected, score: scoreAnswer(q, selected), answeredAt: now } });
+      await tx.liveAnswer.create({ data: { participantId: participant.id, questionIndex: game.questionIndex, selectedIds: selected, score: scoreTimedAnswer(q, selected, game.questionStartedAt.getTime(), now.getTime(), game.deadline.getTime()), answeredAt: now } });
     } else {
       teacher(user);
       if (game.quiz.ownerId !== user.id) throw new AppError("Brak uprawnień.", 403);

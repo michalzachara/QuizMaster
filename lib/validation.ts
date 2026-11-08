@@ -19,11 +19,11 @@ export const questionInput = z.object({
   if (!count || (q.type !== "MULTIPLE" && count !== 1)) ctx.addIssue({ code: "custom", message: "Zaznacz poprawne odpowiedzi.", path: ["options"] });
   if (q.type === "BOOLEAN" && q.options.length !== 2) ctx.addIssue({ code: "custom", message: "Prawda/fałsz wymaga dwóch odpowiedzi.", path: ["options"] });
 });
-export const quizInput = z.object({ title: z.string().trim().min(3).max(120), description: z.string().max(1000), published: z.boolean(), questions: z.array(questionInput).min(1).max(50) }).strict();
+export const quizInput = z.object({ title: z.string().trim().min(3).max(120), description: z.string().max(1000), published: z.boolean(), questions: z.array(questionInput).min(1) }).strict();
 export type QuizInput = z.infer<typeof quizInput>;
 export type Snapshot = { title: string; questions: { id: string; text: string; type: "SINGLE" | "MULTIPLE" | "BOOLEAN"; seconds: number; points: number; options: { id: string; text: string; correct: boolean }[] }[] };
 export const selectionSchema = z.array(z.string().min(1).max(100)).max(6).refine(a => new Set(a).size === a.length);
-export const assignmentInput = z.object({ timeLimitSeconds: z.number().int().min(30).max(14400), maxAttempts: z.number().int().min(1).max(10), opensAt: z.string().datetime(), closesAt: z.string().datetime().nullable(), revealAnswers: z.boolean() }).strict().refine(a => !a.closesAt || new Date(a.closesAt) > new Date(a.opensAt), "Koniec musi przypadać po początku.");
+export const assignmentInput = z.object({ maxAttempts: z.number().int().min(1).max(10), opensAt: z.string().datetime(), closesAt: z.string().datetime(), revealAnswers: z.boolean() }).strict().refine(a => !a.closesAt || new Date(a.closesAt) > new Date(a.opensAt), "Koniec musi przypadać po początku.");
 export function scoreAnswer(q: Snapshot["questions"][number], selected: string[]) {
   if (new Set(selected).size !== selected.length || selected.some(id => !q.options.some(o => o.id === id))) return 0;
   const correct = q.options.filter(o => o.correct).map(o => o.id);
@@ -32,3 +32,13 @@ export function scoreAnswer(q: Snapshot["questions"][number], selected: string[]
 export function publicQuestion(q: Snapshot["questions"][number]) {
   return { ...q, options: q.options.map(({ id, text }) => ({ id, text })) };
 }
+
+/** Live scoring uses server timestamps; individual assignments retain accuracy scoring. */
+export function scoreTimedAnswer(q: Snapshot["questions"][number], selected: string[], startedAt: number, answeredAt: number, deadline: number) {
+  if (![startedAt, answeredAt, deadline].every(Number.isFinite) || deadline <= startedAt || answeredAt < startedAt || answeredAt >= deadline) return 0;
+  const fullScore = scoreAnswer(q, selected);
+  const elapsedFraction = (answeredAt - startedAt) / (deadline - startedAt);
+  return Math.round(fullScore * (1 - elapsedFraction / 2));
+}
+
+export function assignmentDuration(questions: { seconds: number }[]) { return questions.reduce((sum, q) => sum + q.seconds, 300); }

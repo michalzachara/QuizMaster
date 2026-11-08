@@ -94,7 +94,7 @@ Po zakończeniu sprawdź historię obu kont.
 
 ## Ograniczenia i dalszy rozwój
 
-Nie dodano uploadu obrazków, pytań tekstowych, pauzowania gry, bonusu za szybkość
+Nie dodano uploadu obrazków, pytań tekstowych, pauzowania gry
 ani losowania kolejności. Podsumowania pokazują do 100 ostatnich rekordów.
 Nie wykonano testów obciążeniowych ani audytu penetracyjnego. Biblioteki wymagają
 okresowego przeglądu aktualizacji i podatności przed publicznym wdrożeniem.
@@ -102,3 +102,5 @@ Nie ma trwałych kont demonstracyjnych ani fikcyjnych wyników w panelach.
 
 Praca odbywa się w gałęziach `codex/`, z logicznymi commitami. Nie wykonano push.
 Przed połączeniem z main należy zachować i osobno rozliczyć lokalne zmiany użytkownika.
+
+Punktacja na żywo: poprawny komplet odpowiedzi daje round(punkty × (1 − 0,5 × czas / limit)). Czas liczony jest na serwerze od rozpoczęcia pytania. Przed upływem limitu wynik maleje od 100% do 50%; błędne i spóźnione odpowiedzi dają 0. Testy indywidualne zachowują punktację za poprawność.

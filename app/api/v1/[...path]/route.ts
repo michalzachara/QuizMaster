@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { database } from "@/lib/db";
 import { AppError, checkOrigin, rateLimit, readBody, teacher, type Actor } from "@/lib/security";
-import { assignmentInput, quizInput, registrationSchema, type Snapshot } from "@/lib/validation";
+import { assignmentDuration, assignmentInput, quizInput, registrationSchema, type Snapshot } from "@/lib/validation";
 import { answerAttempt, attemptState, startAttempt } from "@/lib/attempts";
 import { gameCommand, gameState, joinGame } from "@/lib/game";
 import { socketTicket } from "@/lib/socket-ticket";
@@ -80,7 +80,7 @@ async function dispatch(request: Request, path: string[]) {
     if (method === "POST" && action === "assignments") {
       const quiz = await ownedQuiz(user, id); if (!quiz.published) throw new AppError("Najpierw opublikuj quiz.");
       const body = assignmentInput.parse(await readBody(request));
-      const a = await db.assignment.create({ data: { ...body, opensAt: new Date(body.opensAt), closesAt: body.closesAt ? new Date(body.closesAt) : null, quizId: id, snapshot: snapshot(quiz) } }); return { id: a.id };
+      const a = await db.assignment.create({ data: { ...body, timeLimitSeconds: assignmentDuration(quiz.questions), opensAt: new Date(body.opensAt), closesAt: body.closesAt ? new Date(body.closesAt) : null, quizId: id, snapshot: snapshot(quiz) } }); return { id: a.id };
     }
     if (method === "POST" && action === "games") {
       const quiz = await ownedQuiz(user, id); if (!quiz.published) throw new AppError("Najpierw opublikuj quiz.");
@@ -90,7 +90,7 @@ async function dispatch(request: Request, path: string[]) {
       } throw new AppError("Nie udało się wygenerować kodu. Spróbuj ponownie.", 503);
     }
     if ((method === "POST" && !id) || (method === "PUT" && id)) {
-      const body = quizInput.parse(await readBody(request));
+      const body = quizInput.parse(await readBody(request, 16_000_000));
       if (id) await ownedQuiz(user, id);
       const questions = body.questions.map((q, position) => ({ ...q, position, options: { create: q.options.map((o, position) => ({ ...o, position })) } }));
       const quiz = await db.$transaction(async tx => {
@@ -103,8 +103,9 @@ async function dispatch(request: Request, path: string[]) {
     if (method === "POST") return startAttempt(user, id);
     const a = await db.assignment.findUnique({ where: { id } });
     if (!a) throw new AppError("Test nie istnieje.", 404);
+    const active = await db.attempt.findFirst({ where: { assignmentId: id, userId: user.id, finishedAt: null }, select: { id: true } });
     const s = a.snapshot as unknown as Snapshot;
-    return { id, title: s.title, questions: s.questions.length, opensAt: a.opensAt, closesAt: a.closesAt, maxAttempts: a.maxAttempts, timeLimitSeconds: a.timeLimitSeconds };
+    return { activeAttemptId: active?.id ?? null, serverTime: Date.now(), id, title: s.title, questions: s.questions.length, opensAt: a.opensAt, closesAt: a.closesAt, maxAttempts: a.maxAttempts, timeLimitSeconds: a.timeLimitSeconds };
   }
   if (resource === "attempts" && id) return method === "GET" ? attemptState(user, id) : answerAttempt(user, id, await readBody(request));
   if (resource === "games" && id === "join" && method === "POST") { const { pin } = z.object({ pin: z.string().regex(/^\d{6}$/) }).strict().parse(await readBody(request)); return joinGame(user, pin); }

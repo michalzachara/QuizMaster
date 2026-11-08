@@ -10,13 +10,13 @@ export async function startAttempt(user: Actor, assignmentId: string) {
     const assignment = await tx.assignment.findUnique({ where: { id: assignmentId } });
     if (!assignment) throw new AppError("Test nie istnieje.", 404);
     const now = new Date();
-    if (assignment.opensAt > now || (assignment.closesAt && assignment.closesAt <= now)) throw new AppError("Test nie jest teraz dostępny.", 403);
     const attempts = await tx.attempt.findMany({ where: { assignmentId, userId: user.id }, orderBy: { number: "desc" } });
     const active = attempts.find(a => !a.finishedAt);
     if (active) return { id: active.id };
+    if (assignment.opensAt > now || (assignment.closesAt && assignment.closesAt <= now)) throw new AppError("Test nie jest teraz dostępny.", 403);
     if (attempts.length >= assignment.maxAttempts) throw new AppError("Wykorzystano limit podejść.", 409);
     const snapshot = assignment.snapshot as unknown as Snapshot;
-    const attempt = await tx.attempt.create({ data: { assignmentId, userId: user.id, number: attempts.length + 1, deadline: new Date(Math.min(now.getTime() + assignment.timeLimitSeconds * 1000, assignment.closesAt?.getTime() ?? Infinity)), maxScore: snapshot.questions.reduce((sum, q) => sum + q.points, 0) } });
+    const attempt = await tx.attempt.create({ data: { assignmentId, userId: user.id, number: attempts.length + 1, deadline: new Date(now.getTime() + assignment.timeLimitSeconds * 1000), maxScore: snapshot.questions.reduce((sum, q) => sum + q.points, 0) } });
     return { id: attempt.id };
   });
 }

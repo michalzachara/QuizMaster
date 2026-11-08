@@ -51,8 +51,16 @@ async function main() {
     const denied = await student(`/api/v1/quizzes/${quizId}`); assert.equal(denied.status, 403);
     const edited = await teacher(`/api/v1/quizzes/${quizId}`, "PUT", { ...input, description: "Edited" }); assert.equal(edited.status, 200);
     const q = await db.question.findFirstOrThrow({ where: { quizId }, include: { options: true } }); const correct = q.options.find(o => o.correct)!.id;
-    const assigned = await teacher(`/api/v1/quizzes/${quizId}/assignments`, "POST", { timeLimitSeconds: 60, maxAttempts: 1, opensAt: new Date().toISOString(), closesAt: null, revealAnswers: true }); assert.equal(assigned.status, 200);
+    const assigned = await teacher(`/api/v1/quizzes/${quizId}/assignments`, "POST", { maxAttempts: 1, opensAt: new Date().toISOString(), closesAt: new Date(Date.now() + 60000).toISOString(), revealAnswers: true }); assert.equal(assigned.status, 200);
     const begun = await student(`/api/v1/assignments/${assigned.data.id}`, "POST", {}); assert.equal(begun.status, 200); const attemptId = begun.data.id;
+    const savedAssignment = await db.assignment.findUniqueOrThrow({ where: { id: assigned.data.id } });
+    assert.equal(savedAssignment.timeLimitSeconds, 305);
+    const startedAttempt = await db.attempt.findUniqueOrThrow({ where: { id: attemptId } });
+    assert.ok(startedAttempt.deadline > savedAssignment.closesAt!);
+    await db.assignment.update({ where: { id: assigned.data.id }, data: { closesAt: new Date(Date.now() - 1) } });
+    assert.equal((await other(`/api/v1/assignments/${assigned.data.id}`, "POST", {})).status, 403);
+    assert.equal((await student(`/api/v1/assignments/${assigned.data.id}`, "POST", {})).data.id, attemptId);
+    console.log("PASS: duration = sum of question limits + 5 minutes; expired link blocks new starts but permits resuming");
     const state = await student(`/api/v1/attempts/${attemptId}`); assert.equal(JSON.stringify(state.data).includes("correct"), false);
     const before = await db.attempt.findUniqueOrThrow({ where: { id: attemptId } });
     assert.equal((await other(`/api/v1/attempts/${attemptId}`)).status, 403);
@@ -65,7 +73,8 @@ async function main() {
     assert.equal((await student(`/api/v1/attempts/${attemptId}`, "POST", { action: "answer", questionId: q.id, selectedIds: [correct] })).status, 409);
     assert.equal((await db.attempt.findUniqueOrThrow({ where: { id: attemptId } })).score, 1000);
     await student(`/api/v1/attempts/${attemptId}`, "POST", { action: "finish" });
-    assert.equal((await student(`/api/v1/assignments/${assigned.data.id}`, "POST", {})).status, 409);
+    assert.equal((await student(`/api/v1/assignments/${assigned.data.id}`, "POST", {})).status, 403);
+    console.log("PASS: answer and submission accepted after link expiry within the personal deadline");
     console.log("PASS SECURITY: score manipulation and duplicate answers rejected; score remains 1000");
     const game = await teacher(`/api/v1/quizzes/${quizId}/games`, "POST", {}); assert.equal(game.status, 200); const gameId = game.data.id;
     const gameRow = await db.game.findUniqueOrThrow({ where: { id: gameId } });
@@ -74,21 +83,29 @@ async function main() {
     assert.equal((await db.game.findUniqueOrThrow({ where: { id: gameId } })).status, "WAITING");
     async function connect(request: ReturnType<typeof client>) {
       const ticket = await request("/api/v1/socket-ticket", "POST", {});
-      const s = io(base, { auth: { ticket: ticket.data.ticket }, extraHeaders: { Origin: base }, autoConnect: false, reconnection: false }); sockets.push(s);
+      // Match same-origin browser polling: browsers omit Origin on this GET.
+      const s = io(base, { auth: { ticket: ticket.data.ticket }, transports: ["polling"], extraHeaders: { "Sec-Fetch-Site": "same-origin" }, autoConnect: false, reconnection: false }); sockets.push(s);
       await new Promise<void>((resolve, reject) => { const timeout = setTimeout(() => reject(new Error("Socket connect timeout")), 10000); s.on("connect", () => { clearTimeout(timeout); resolve(); }); s.on("connect_error", reject); s.connect(); });
       await new Promise<void>((resolve, reject) => s.timeout(10000).emit("watch", gameId, (err: Error | null, result: { error?: string }) => err || result.error ? reject(err || new Error(result.error)) : resolve())); return s;
     }
-    const hostSocket = await connect(teacher), studentSocket = await connect(student); await connect(other);
+    const hostSocket = await connect(teacher), studentSocket = await connect(student); const otherSocket = await connect(other);
     async function command(s: Socket, body: object) { return new Promise<{ error?: string }>((resolve, reject) => s.timeout(10000).emit("command", body, (err: Error | null, result: { error?: string }) => err ? reject(err) : resolve(result))); }
     assert.equal((await command(hostSocket, { action: "next" })).error, undefined);
     assert.equal((await command(studentSocket, { action: "answer", questionIndex: 0, selectedIds: [correct] })).error, undefined);
     assert.ok((await command(studentSocket, { action: "answer", questionIndex: 0, selectedIds: [correct] })).error);
+    const firstAnswer = await db.liveAnswer.findFirstOrThrow({ where: { participant: { gameId, userId: users[1] } } });
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    assert.equal((await command(otherSocket, { action: "answer", questionIndex: 0, selectedIds: [correct] })).error, undefined);
+    const secondAnswer = await db.liveAnswer.findFirstOrThrow({ where: { participant: { gameId, userId: users[2] } } });
+    assert.ok(firstAnswer.score > secondAnswer.score);
+    assert.ok(firstAnswer.score <= 1000 && secondAnswer.score >= 500);
+    console.log("PASS: faster correct answer earns more points, calculated and persisted by server");
     studentSocket.disconnect(); await connect(student);
     await new Promise(resolve => setTimeout(resolve, 6000));
     const late = await other(`/api/v1/games/${gameId}`, "POST", { action: "answer", questionIndex: 0, selectedIds: [correct] }); assert.equal(late.status, 409);
-    assert.equal(await db.liveAnswer.count({ where: { participant: { gameId } } }), 1);
+    assert.equal(await db.liveAnswer.count({ where: { participant: { gameId } } }), 2);
     await command(hostSocket, { action: "next" });
-    const final = await student(`/api/v1/games/${gameId}`); assert.equal(final.data.status, "FINISHED"); assert.equal(final.data.ranking.find((p: { me: boolean }) => p.me).score, 1000);
+    const final = await student(`/api/v1/games/${gameId}`); assert.equal(final.data.status, "FINISHED"); assert.equal(final.data.ranking.find((p: { me: boolean }) => p.me).score, firstAnswer.score);
     console.log("PASS: Socket.IO lobby, two students, host control, reconnect, timeout, duplicate rejection and persisted ranking");
   } finally {
     sockets.forEach(s => s.disconnect());

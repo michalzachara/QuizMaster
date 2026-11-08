@@ -24,7 +24,7 @@ export function checkOrigin(request: Request) {
   const expected = new URL(process.env.AUTH_URL || request.url).origin;
   if (request.headers.get("origin") !== expected) throw new AppError("Niedozwolone źródło żądania.", 403);
 }
-export async function readBody(request: Request) {
+export async function readBody(request: Request, maxBytes = 128_000) {
   if (!request.headers.get("content-type")?.includes("application/json")) throw new AppError("Wymagany JSON.", 415);
   const reader = request.body?.getReader();
   if (!reader) throw new AppError("Brak danych.");
@@ -32,7 +32,7 @@ export async function readBody(request: Request) {
   for (;;) {
     const { done, value } = await reader.read(); if (done) break;
     size += value.byteLength;
-    if (size > 128_000) { await reader.cancel(); throw new AppError("Za duży formularz.", 413); }
+    if (size > maxBytes) { await reader.cancel(); throw new AppError("Za duży formularz.", 413); }
     chunks.push(value);
   }
   try { return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown; }
