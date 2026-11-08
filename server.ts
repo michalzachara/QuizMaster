@@ -1,4 +1,5 @@
 import { loadEnvConfig } from "@next/env";
+import { allowSocketOrigin } from "./lib/socket-origin";
 loadEnvConfig(process.cwd());
 
 async function main() {
@@ -11,7 +12,7 @@ async function main() {
   const app = next({ dev, port, hostname: "localhost", webpack: true });
   await app.prepare(); const handler = app.getRequestHandler();
   const http = createServer((req, res) => { void handler(req, res); });
-  const io = new Server(http, { maxHttpBufferSize: 16_384, cors: { origin, credentials: true }, allowRequest: (req, done) => done(null, req.headers.origin === origin) });
+  const io = new Server(http, { maxHttpBufferSize: 16_384, cors: { origin, credentials: true }, allowRequest: (req, done) => done(null, allowSocketOrigin(req.headers.origin, req.headers["sec-fetch-site"] as string | undefined, origin)) });
   io.use(async (socket, done) => {
     try { socket.data.user = await ticketUser(String(socket.handshake.auth.ticket || "")); socket.data.expiresAt = Date.now() + 3600000; done(); }
     catch { done(new Error("Zaloguj się ponownie.")); }
