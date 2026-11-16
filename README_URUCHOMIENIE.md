@@ -1,7 +1,6 @@
 # QuizMaster — instrukcja uruchomienia
 
 Opis aplikacji i jej funkcji znajdziesz w [README.md](README.md).
-Wszystkie poniższe polecenia wykonuj w głównym katalogu projektu, obok `package.json`.
 
 ## 1. Wymagania
 
@@ -25,8 +24,6 @@ strony, jak i rozgrywki przez Socket.IO. Sam hosting plików statycznych nie wys
 npm ci
 ```
 
-Nie pomijaj `devDependencies`: zawierają m.in. `tsx`, który jest używany także przez
-`npm run start`, oraz narzędzia do budowania projektu.
 
 ## 3. Konfiguracja środowiska
 
