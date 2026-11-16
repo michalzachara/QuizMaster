@@ -1255,6 +1255,175 @@ html.violet .theme-switch {
     flex-wrap: wrap;
   }
 }
+/* Library controls stay local: filtering never sends a request per keystroke. */
+.library-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 20px;
+  margin: 20px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+}
+.library-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--muted-foreground);
+}
+.library-search .qm-input {
+  flex: 1;
+  min-width: 0;
+}
+.library-search > button {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 10px;
+  color: var(--foreground);
+  background: var(--muted);
+}
+.library-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.library-sort select {
+  padding: 12px;
+  border: 1px solid var(--input);
+  border-radius: 12px;
+  color: var(--foreground);
+  background: var(--background);
+  min-width: 0;
+}
+.library-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.library-filters button,
+.library-favorites {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--muted-foreground);
+  background: var(--background);
+  font-size: 14px;
+  font-weight: 600;
+}
+.library-filters button span {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.quiz-library button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.library-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0 24px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.library-summary > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--primary);
+  font-weight: 600;
+}
+.library-summary small {
+  flex-basis: 100%;
+  font-size: 12px;
+}
+.library-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.library-card .quiz-card {
+  flex: 1;
+}
+.library-star {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 3px 12px #00000012;
+}
+.library-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 9px;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+.library-edit:hover,
+.library-star:hover {
+  background: var(--accent);
+}
+.quiz-library :is(button, a, input, select):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (max-width: 850px) {
+  .library-toolbar {
+    grid-template-columns: 1fr;
+  }
+  .library-sort {
+    flex-wrap: wrap;
+  }
+  .library-sort select {
+    flex: 1;
+  }
+  .library-favorites {
+    justify-self: start;
+  }
+}
+@media (max-width: 480px) {
+  .library-toolbar {
+    padding: 14px;
+  }
+  .library-search > svg {
+    display: none;
+  }
+  .library-filters {
+    gap: 6px;
+  }
+  .library-filters button {
+    padding: 9px;
+    font-size: 12px;
+  }
+}
+
 /* Interactive landing: use the selected theme without changing card geometry. */
 .theme-switch button,
 .mobile-nav .theme-switch button {

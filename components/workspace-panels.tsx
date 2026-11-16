@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { motion } from "motion/react";
+import { QuizLibrary } from "./quiz-library";
 import { Plus, ArrowUpRight, BookOpen, Radio, Trophy, Users, ArrowRight } from "lucide-react";
 import { api, useResource, type Me } from "@/lib/client";
 import { Card } from "./ui/card";
@@ -51,7 +51,6 @@ const gameLabels: Record<string, string> = {
 
 export function Dashboard({ me, view }: { me: Me; view: string }) {
   const { data, error } = useResource<DashboardData>("dashboard");
-  const [search, setSearch] = useState("");
   if (error) return <p className="error">{error}</p>;
   if (!data) return <p className="loading">Ładujemy Twoje wyniki…</p>;
   const finished = data.attempts.filter((a) => a.finished);
@@ -61,9 +60,6 @@ export function Dashboard({ me, view }: { me: Me; view: string }) {
       )
     : null;
   const teacher = me.role === "TEACHER";
-  const quizzes = data.quizzes.filter((q) =>
-    q.title.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
-  );
   return (
     <>
       <div className="page-heading">
@@ -144,59 +140,7 @@ export function Dashboard({ me, view }: { me: Me; view: string }) {
         </>
       )}
       {teacher && view !== "history" && (
-        <section className="panel-section">
-          <div className="section-row">
-            <h2>{view === "quizzes" ? "Wszystkie quizy" : "Twoje ostatnie quizy"}</h2>
-            <Input
-              aria-label="Szukaj quizu"
-              placeholder="Szukaj quizu…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          {!quizzes.length ? (
-            <Card className="empty">
-              <BookOpen size={32} />
-              <h3>{search ? "Nie ma takiego quizu" : "Tu zaczyna się dobra lekcja"}</h3>
-              <p>
-                {search
-                  ? "Spróbuj wpisać inny tytuł."
-                  : "Utwórz pierwszy quiz i zaproś uczniów do nauki."}
-              </p>
-              <Link href="/quizzes/new" className="link-button">
-                Utwórz quiz <Plus size={16} />
-              </Link>
-            </Card>
-          ) : (
-            <div className="quiz-grid">
-              {quizzes.slice(0, view === "dashboard" ? 6 : 100).map((q, i) => (
-                <motion.div
-                  key={q.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.04, 0.3) }}
-                >
-                  <Link href={`/quizzes/${q.id}`} className="quiz-card">
-                    <div className={`quiz-cover cover-${i % 4}`}>
-                      <BookOpen size={40} />
-                      <span className="badge">
-                        {q.published ? "Opublikowany" : "Wersja robocza"}
-                      </span>
-                    </div>
-                    <div className="quiz-card-body">
-                      <small>{q._count.questions} pytań</small>
-                      <h3>{q.title}</h3>
-                      <p>{q.description || "Twój pomysł na angażującą lekcję."}</p>
-                      <span>
-                        Otwórz quiz <ArrowUpRight size={17} />
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </section>
+        <QuizLibrary quizzes={data.quizzes} userId={me.id} compact={view === "dashboard"} />
       )}
       {view !== "quizzes" && (
         <>
