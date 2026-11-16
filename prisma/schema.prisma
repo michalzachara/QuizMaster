@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client"
+  output = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+}
+
+enum QuestionType {
+  SINGLE
+  MULTIPLE
+  BOOLEAN
+}
+
+enum GameStatus {
+  WAITING
+  QUESTION
+  RESULTS
+  FINISHED
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  name String
+  passwordHash String
+  role Role @default(STUDENT)
+  sessionVersion Int @default(0)
+  createdAt DateTime @default(now())
+  quizzes Quiz[]
+  attempts Attempt[]
+  participants Participant[]
+}
+
+model TeacherInvitation {
+  id String @id @default(cuid())
+  tokenHash String @unique
+  email String
+  expiresAt DateTime
+  redeemedAt DateTime?
+}
+
+model Quiz {
+  id String @id @default(cuid())
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id])
+  title String
+  description String @default("")
+  published Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  questions Question[]
+  assignments Assignment[]
+  games Game[]
+  @@index([ownerId, createdAt])
+}
+
+model Question {
+  id String @id @default(cuid())
+  quizId String
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text String
+  type QuestionType
+  position Int
+  seconds Int @default(30)
+  points Int @default(1000)
+  options Option[]
+  @@unique([quizId, position])
+}
+
+model Option {
+  id String @id @default(cuid())
+  questionId String
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text String
+  correct Boolean @default(false)
+  position Int
+  @@unique([questionId, position])
+}
+
+model Assignment {
+  id String @id @default(cuid())
+  quizId String
+  quiz Quiz @relation(fields: [quizId], references: [id])
+  snapshot Json
+  opensAt DateTime @default(now())
+  closesAt DateTime?
+  timeLimitSeconds Int
+  maxAttempts Int @default(1)
+  revealAnswers Boolean @default(false)
+  attempts Attempt[]
+  @@index([quizId])
+}
+
+model Attempt {
+  id String @id @default(cuid())
+  assignmentId String
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  number Int
+  startedAt DateTime @default(now())
+  deadline DateTime
+  finishedAt DateTime?
+  answers Json @default("{}")
+  score Int @default(0)
+  maxScore Int
+  @@unique([assignmentId, userId, number])
+  @@index([userId, startedAt])
+}
+
+model Game {
+  id String @id @default(cuid())
+  pin String @unique
+  quizId String
+  quiz Quiz @relation(fields: [quizId], references: [id])
+  snapshot Json
+  status GameStatus @default(WAITING)
+  questionIndex Int @default(-1)
+  questionStartedAt DateTime?
+  deadline DateTime?
+  createdAt DateTime @default(now())
+  finishedAt DateTime?
+  participants Participant[]
+  @@index([quizId, createdAt])
+  @@index([status, deadline])
+}
+
+model Participant {
+  id String @id @default(cuid())
+  gameId String
+  game Game @relation(fields: [gameId], references: [id])
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  joinedAt DateTime @default(now())
+  answers LiveAnswer[]
+  @@unique([gameId, userId])
+  @@index([userId])
+}
+
+model LiveAnswer {
+  id String @id @default(cuid())
+  participantId String
+  participant Participant @relation(fields: [participantId], references: [id])
+  questionIndex Int
+  selectedIds String[]
+  score Int
+  answeredAt DateTime @default(now())
+  @@unique([participantId, questionIndex])
+}
+
+model RateLimit {
+  key String @id
+  count Int
+  expiresAt DateTime
+  @@index([expiresAt])
+}

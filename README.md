@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QuizMaster — opis projektu
 
-## Getting Started
+QuizMaster to aplikacja internetowa do tworzenia quizów, prowadzenia rozgrywek
+na żywo i udostępniania testów indywidualnych. Łączy panel nauczyciela z przestrzenią
+ucznia, automatycznym sprawdzaniem odpowiedzi oraz historią wyników.
 
-First, run the development server:
+Interfejs jest po polsku i działa w przeglądarce na komputerze, tablecie i telefonie.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**Instalacja i konfiguracja:** [Instrukcja uruchomienia](README_URUCHOMIENIE.md).
+
+## Dla kogo jest aplikacja?
+
+Przy rejestracji użytkownik wybiera jedną z dwóch ról:
+
+- **Nauczyciel** — tworzy i publikuje quizy, prowadzi rozgrywki, udostępnia testy
+  oraz przegląda wyniki swoich uczniów.
+- **Uczeń** — dołącza do rozgrywki kodem, otwiera test z linku i sprawdza własne wyniki.
+
+Nie ma roli administratora ani weryfikacji konta kodem e-mail. Do udziału w testach
+oraz rozgrywkach potrzebne jest konto ucznia.
+
+## Funkcje aplikacji
+
+### Konta i ustawienia
+
+- Rejestracja, logowanie i wylogowanie.
+- Edycja nazwy użytkownika oraz zmiana hasła z podaniem obecnego hasła.
+- Automatyczne przekierowanie zalogowanej osoby ze strony głównej, logowania
+  i rejestracji do panelu.
+- Trzy motywy: biały, ciemny i neonowy, wybierane ikonkami.
+- Włączanie dźwięków, regulacja głośności i odsłuch efektu.
+- Ustawienia animacji, większego tekstu i kompaktowego widoku.
+
+Preferencje wyglądu i dźwięku są zapisywane w przeglądarce.
+
+### Tworzenie i edycja quizów
+
+- Tytuł, opis, wersja robocza i publikowanie quizu.
+- Pytania jednokrotnego wyboru, wielokrotnego wyboru oraz prawda/fałsz.
+- Osobny czas odpowiedzi i maksymalna liczba punktów dla każdego pytania.
+- Dodawanie pytań bez ustawionego limitu ich liczby w edytorze.
+- Duplikowanie, usuwanie i zmiana kolejności pytań oraz podgląd quizu.
+- Duplikowanie całego quizu.
+- Wskazywanie błędnie wypełnionych pól i komunikaty o wyniku zapisu.
+
+Quizy z historią testów lub rozgrywek są chronione przed usunięciem. Treść udostępnionego
+testu i uruchomionej sesji jest utrwalana, więc późniejsza edycja quizu nie zmienia
+pytań w tych testach i sesjach.
+
+### Biblioteka quizów
+
+- Wyszukiwanie po tytule i opisie, również bez polskich znaków.
+- Filtrowanie quizów opublikowanych i roboczych.
+- Sortowanie według ostatniej edycji, tytułu lub liczby pytań.
+- Oznaczanie quizów gwiazdką i filtr „Tylko ulubione”.
+- Szybkie przejście do edycji, licznik wyników i czyszczenie filtrów.
+
+Ulubione są zapisywane osobno dla konta w danej przeglądarce. Nie synchronizują się
+między urządzeniami. Wyszukiwanie i filtrowanie działają na pobranej liście,
+bez dodatkowego zapytania do serwera przy każdym wpisanym znaku.
+
+### Rozgrywka na żywo
+
+Nauczyciel uruchamia opublikowany quiz i udostępnia sześciocyfrowy kod lub link.
+Uczniowie dołączają do poczekalni, a prowadzący uruchamia kolejne pytania.
+
+- Wspólna poczekalnia i lista uczestników.
+- Kopiowanie kodu i linku; możliwość wklejenia linku w pole kodu.
+- Odliczanie czasu synchronizowane z serwerem.
+- Punkty za poprawność i szybkość odpowiedzi.
+- Wyniki pytań, ranking i podium na zakończenie.
+- Możliwość powrotu do stanu gry po ponownym połączeniu.
+
+Za poprawną odpowiedź gracz otrzymuje od około 50% do 100% punktów pytania.
+Im szybciej odpowie, tym większy wynik. Błędna lub spóźniona odpowiedź daje 0 punktów.
+W pytaniach wielokrotnego wyboru wymagany jest dokładnie poprawny zestaw odpowiedzi.
+Czas i punkty oblicza serwer:
+
+```text
+punkty = round(maksymalne_punkty × (1 − 0,5 × czas_odpowiedzi / limit_czasu))
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Nowe osoby mogą dołączać tylko w poczekalni.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Testy indywidualne z linku
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Okno dostępności: początek i koniec możliwości rozpoczęcia testu.
+- Limit podejść oraz ustawienie ujawniania odpowiedzi po zakończeniu.
+- Automatyczny limit czasu: suma czasów wszystkich pytań + 5 minut.
+- Wznawianie rozpoczętego podejścia i zapis odpowiedzi.
+- Automatyczne sprawdzanie oraz podsumowanie wyniku.
 
-## Learn More
+Wygaśnięcie linku blokuje nowe podejścia. Osoba, która rozpoczęła wcześniej,
+zachowuje swój pełny czas na ukończenie i oddanie testu. Zamknięcie przeglądarki
+nie zatrzymuje licznika. W tym trybie punkty zależą od poprawności, a nie szybkości.
 
-To learn more about Next.js, take a look at the following resources:
+### Panel i strona główna
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Historia testów i rozgrywek oraz podsumowania wyników.
+- Wykres aktywności z wyborem 7 lub 14 dni i statystyki ukończenia testów.
+- Opis zasad, odpowiedzi na częste pytania i prezentacja trybów nauki.
+- Quiz demonstracyjny z trzema pytaniami, dostępny bez konta.
+- Symulator punktacji za szybkość i kalkulator czasu testu.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Technologie i organizacja kodu
 
-## Deploy on Vercel
+Aplikacja korzysta z Next.js, React i TypeScript. Interfejs wykorzystuje Tailwind CSS,
+Base UI, Lucide, Motion oraz next-themes. Logowanie obsługuje Auth.js, hasła są haszowane
+przez Argon2, a dane wejściowe sprawdza Zod. PostgreSQL jest obsługiwany przez Prisma
+z adapterem `pg`. Rozgrywki na żywo korzystają z Socket.IO.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Katalog lub plik | Przeznaczenie                                             |
+| ---------------- | --------------------------------------------------------- |
+| `app/`           | Strony, API i style aplikacji                             |
+| `components/`    | Widoki, formularze i elementy interfejsu                  |
+| `lib/`           | Walidacja, dostęp do danych, punktacja i logika rozgrywek |
+| `prisma/`        | Schemat bazy i migracje                                   |
+| `server.ts`      | Wspólny serwer HTTP i Socket.IO                           |
+| `tests/`         | Testy jednostkowe                                         |
+| `scripts/`       | Skrypty pomocnicze i testy integracyjne                   |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Widoki edytora i rozgrywki są ładowane na żądanie. Dane panelu pobierają się równolegle,
+a uczestnicy jednej gry współdzielą odczyt jej stanu w danym cyklu odświeżania.
+Kontrola uprawnień i odpowiedzi pozostaje osobna dla każdego gracza.
+
+## Obecny zakres i ograniczenia
+
+- Podsumowania i biblioteka obejmują do 100 ostatnich rekordów danej kategorii.
+- Brak wysyłki e-maili, resetu hasła przez e-mail i trwałych kont demonstracyjnych.
+- Brak przesyłania obrazków do pytań, odpowiedzi tekstowych, pauzowania rozgrywki
+  i losowania kolejności pytań.
+- Brak limitu liczby pytań w edytorze nie oznacza nieograniczonego rozmiaru zapisu:
+  API przyjmuje formularz quizu do 16 MB.
+- Obecna konfiguracja serwera jest przygotowana dla jednej instancji Node.js.
+  Uruchomienie kilku instancji wymaga dodatkowej koordynacji Socket.IO.
