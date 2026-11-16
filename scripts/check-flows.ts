@@ -315,6 +315,20 @@ async function main() {
     const final = await student(`/api/v1/games/${gameId}`);
     assert.equal(final.data.status, "FINISHED");
     assert.equal(final.data.ranking.find((p: { me: boolean }) => p.me).score, firstAnswer.score);
+    const [teacherDashboard, studentDashboard] = await Promise.all([
+      teacher("/api/v1/dashboard"),
+      student("/api/v1/dashboard"),
+    ]);
+    assert.equal(teacherDashboard.status, 200);
+    assert.equal(studentDashboard.status, 200);
+    assert.ok(teacherDashboard.data.quizzes.some((quiz: { id: string }) => quiz.id === quizId));
+    assert.deepEqual(studentDashboard.data.quizzes, []);
+    assert.ok(
+      studentDashboard.data.attempts.some((attempt: { id: string }) => attempt.id === attemptId),
+    );
+    assert.ok(studentDashboard.data.games.some((game: { id: string }) => game.id === gameId));
+    assert.equal(JSON.stringify(studentDashboard.data).includes('"correct"'), false);
+    console.log("PASS: parallel dashboard reads preserve teacher/student data and hide answers");
     console.log(
       "PASS: Socket.IO lobby, two students, host control, reconnect, timeout, duplicate rejection and persisted ranking",
     );

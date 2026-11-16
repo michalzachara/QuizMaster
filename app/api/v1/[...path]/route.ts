@@ -111,40 +111,41 @@ async function dispatch(request: Request, path: string[]) {
   }
   if (resource === "socket-ticket" && method === "POST") return { ticket: socketTicket(user) };
   if (resource === "dashboard" && method === "GET") {
-    const quizzes =
+    const [quizzes, attempts, games] = await Promise.all([
       user.role === "TEACHER"
-        ? await db.quiz.findMany({
+        ? db.quiz.findMany({
             where: { ownerId: user.id },
             orderBy: { updatedAt: "desc" },
             include: { _count: { select: { questions: true } } },
             take: 100,
           })
-        : [];
-    const attempts = await db.attempt.findMany({
-      where:
-        user.role === "TEACHER"
-          ? { assignment: { quiz: { ownerId: user.id } } }
-          : { userId: user.id },
-      include: { user: { select: { name: true } }, assignment: { select: { snapshot: true } } },
-      orderBy: { startedAt: "desc" },
-      take: 100,
-    });
-    const games = await db.game.findMany({
-      where:
-        user.role === "TEACHER"
-          ? { quiz: { ownerId: user.id } }
-          : { participants: { some: { userId: user.id } } },
-      select: {
-        id: true,
-        pin: true,
-        status: true,
-        createdAt: true,
-        snapshot: true,
-        _count: { select: { participants: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+        : Promise.resolve([]),
+      db.attempt.findMany({
+        where:
+          user.role === "TEACHER"
+            ? { assignment: { quiz: { ownerId: user.id } } }
+            : { userId: user.id },
+        include: { user: { select: { name: true } }, assignment: { select: { snapshot: true } } },
+        orderBy: { startedAt: "desc" },
+        take: 100,
+      }),
+      db.game.findMany({
+        where:
+          user.role === "TEACHER"
+            ? { quiz: { ownerId: user.id } }
+            : { participants: { some: { userId: user.id } } },
+        select: {
+          id: true,
+          pin: true,
+          status: true,
+          createdAt: true,
+          snapshot: true,
+          _count: { select: { participants: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+    ]);
     return {
       quizzes,
       attempts: attempts.map((a) => ({

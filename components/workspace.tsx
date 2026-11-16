@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
@@ -15,11 +16,44 @@ import {
 } from "lucide-react";
 import { useResource, type Me } from "@/lib/client";
 import { ThemeSwitch } from "./providers";
-import { AuthScreen } from "./auth-screen";
-import { Dashboard, Join, Profile } from "./workspace-panels";
-import { QuizEditor, QuizDetails } from "./quiz-editor";
-import { Assignment, Attempt, LiveGame } from "./play";
+
 import { Button } from "./ui/button";
+
+function LoadingView() {
+  return (
+    <p className="loading" role="status">
+      Ładowanie widoku…
+    </p>
+  );
+}
+
+const AuthScreen = dynamic(() => import("./auth-screen").then((module) => module.AuthScreen), {
+  loading: LoadingView,
+});
+const Dashboard = dynamic(() => import("./workspace-panels").then((module) => module.Dashboard), {
+  loading: LoadingView,
+});
+const Join = dynamic(() => import("./workspace-panels").then((module) => module.Join), {
+  loading: LoadingView,
+});
+const Profile = dynamic(() => import("./workspace-panels").then((module) => module.Profile), {
+  loading: LoadingView,
+});
+const QuizEditor = dynamic(() => import("./quiz-editor").then((module) => module.QuizEditor), {
+  loading: LoadingView,
+});
+const QuizDetails = dynamic(() => import("./quiz-editor").then((module) => module.QuizDetails), {
+  loading: LoadingView,
+});
+const Assignment = dynamic(() => import("./play").then((module) => module.Assignment), {
+  loading: LoadingView,
+});
+const Attempt = dynamic(() => import("./play").then((module) => module.Attempt), {
+  loading: LoadingView,
+});
+const LiveGame = dynamic(() => import("./play").then((module) => module.LiveGame), {
+  loading: LoadingView,
+});
 
 export function Workspace() {
   const path = usePathname();
