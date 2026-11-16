@@ -1,4 +1,5 @@
 import { loadEnvConfig } from "@next/env";
+import { refreshGames } from "./lib/live-sync";
 import { allowSocketOrigin } from "./lib/socket-origin";
 
 loadEnvConfig(process.cwd());
@@ -10,7 +11,7 @@ async function main() {
     { Server },
     { database },
     { ticketUser },
-    { gameState, gameCommand },
+    { gameState, gameCommand, loadGame, gameStateForUser },
     { AppError },
   ] = await Promise.all([
     import("next"),
@@ -91,29 +92,41 @@ async function main() {
   let polling = false;
   const timer = setInterval(async () => {
     if (polling) return;
+    const viewers = [...io.sockets.sockets.values()].filter((socket) => socket.data.gameId);
+    if (!viewers.length) return;
     polling = true;
     try {
       await database().game.updateMany({
         where: { status: "QUESTION", deadline: { lte: new Date() } },
         data: { status: "RESULTS" },
       });
-      for (const socket of io.sockets.sockets.values()) {
-        if (!socket.data.gameId) continue;
-        try {
-          const user = await database().user.findUnique({ where: { id: socket.data.user.id } });
-          if (
-            !user ||
-            user.sessionVersion !== socket.data.user.sessionVersion ||
-            Date.now() > socket.data.expiresAt
-          ) {
-            socket.disconnect(true);
-            continue;
-          }
-          socket.emit("state", await gameState(user, socket.data.gameId));
-        } catch {
-          socket.emit("service-error", "Nie można odświeżyć rozgrywki. Ponawiamy połączenie.");
+      const users = await database().user.findMany({
+        where: { id: { in: [...new Set(viewers.map((socket) => socket.data.user.id))] } },
+        select: { id: true, name: true, email: true, role: true, sessionVersion: true },
+      });
+      const byId = new Map(users.map((user) => [user.id, user]));
+      const authorized = viewers.filter((socket) => {
+        const user = byId.get(socket.data.user.id);
+        if (
+          !user ||
+          user.sessionVersion !== socket.data.user.sessionVersion ||
+          Date.now() > socket.data.expiresAt
+        ) {
+          socket.disconnect(true);
+          return false;
         }
-      }
+        return true;
+      });
+      await refreshGames(
+        authorized,
+        loadGame,
+        (socket, game) => {
+          const user = byId.get(socket.data.user.id)!;
+          socket.emit("state", gameStateForUser(user, game));
+        },
+        (socket) =>
+          socket.emit("service-error", "Nie można odświeżyć rozgrywki. Ponawiamy połączenie."),
+      );
     } catch {
       console.error("Live synchronization unavailable; retrying");
     } finally {

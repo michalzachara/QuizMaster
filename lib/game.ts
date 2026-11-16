@@ -21,17 +21,27 @@ export async function joinGame(user: Actor, pin: string) {
   });
 }
 
-export async function gameState(user: Actor, id: string) {
-  const game = await database().game.findUnique({
+export async function loadGame(id: string) {
+  return database().game.findUnique({
     where: { id },
     include: {
       quiz: { select: { ownerId: true } },
       participants: {
-        include: { user: { select: { name: true } }, answers: true },
+        include: {
+          user: { select: { name: true } },
+          answers: { select: { questionIndex: true, selectedIds: true, score: true } },
+        },
         orderBy: { joinedAt: "asc" },
       },
     },
   });
+}
+
+export async function gameState(user: Actor, id: string) {
+  return gameStateForUser(user, await loadGame(id));
+}
+
+export function gameStateForUser(user: Actor, game: Awaited<ReturnType<typeof loadGame>>) {
   if (!game) throw new AppError("Nie znaleziono rozgrywki.", 404);
   const host = game.quiz.ownerId === user.id && user.role === "TEACHER";
   const me = game.participants.find((p) => p.userId === user.id);
@@ -44,7 +54,7 @@ export async function gameState(user: Actor, id: string) {
       : game.status;
   const answered = me?.answers.find((a) => a.questionIndex === game.questionIndex);
   return {
-    id,
+    id: game.id,
     pin: game.pin,
     title: snapshot.title,
     host,
