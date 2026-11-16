@@ -12,10 +12,12 @@ const id = `connection-test-${randomUUID()}`;
 try {
   await client.connect();
   await client.query("BEGIN");
-  await client.query(
-    'INSERT INTO "User" (id,email,name,"passwordHash") VALUES ($1,$2,$3,$4)',
-    [id, `${id}@example.invalid`, "Connection test", "not-a-login-hash"],
-  );
+  await client.query('INSERT INTO "User" (id,email,name,"passwordHash") VALUES ($1,$2,$3,$4)', [
+    id,
+    `${id}@example.invalid`,
+    "Connection test",
+    "not-a-login-hash",
+  ]);
   const result = await client.query('SELECT role FROM "User" WHERE id=$1', [id]);
   assert.equal(result.rows[0].role, "STUDENT");
   await client.query("ROLLBACK");

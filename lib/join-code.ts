@@ -6,5 +6,7 @@ export function parseJoinCode(value: string): string | null {
     const url = new URL(value.trim());
     const pin = url.searchParams.get("pin");
     return ["http:", "https:"].includes(url.protocol) && pin && /^\d{6}$/.test(pin) ? pin : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }

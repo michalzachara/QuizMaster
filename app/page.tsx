@@ -5,8 +5,20 @@ import { currentUser } from "@/lib/current-user";
 
 async function PublicHome() {
   if (await currentUser()) redirect("/dashboard");
-  return <Landing/>;
+  return <Landing />;
 }
+
 export default function Home() {
-  return <Suspense fallback={<main className="gate" aria-busy="true"><div className="loader"/><p>Otwieramy QuizMaster…</p></main>}><PublicHome/></Suspense>;
+  return (
+    <Suspense
+      fallback={
+        <main className="gate" aria-busy="true">
+          <div className="loader" />
+          <p>Otwieramy QuizMaster…</p>
+        </main>
+      }
+    >
+      <PublicHome />
+    </Suspense>
+  );
 }

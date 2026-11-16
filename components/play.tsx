@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,65 +12,672 @@ import { Button } from "./ui/button";
 
 import { playSound } from "@/lib/preferences";
 
-type Question = { id: string; text: string; type: string; points: number; options: { id: string; text: string }[]; correctIds?: string[] };
-function Countdown({ deadline, serverTime, onEnd }: { deadline: string; serverTime: number; onEnd?: () => void }) {
-  const [remaining, setRemaining] = useState(Math.max(0, Math.ceil((Date.parse(deadline) - serverTime) / 1000)));
-  const endCallback = useRef(onEnd); useEffect(() => { endCallback.current = onEnd; }, [onEnd]);
+type Question = {
+  id: string;
+  text: string;
+  type: string;
+  points: number;
+  options: { id: string; text: string }[];
+  correctIds?: string[];
+};
+
+function Countdown({
+  deadline,
+  serverTime,
+  onEnd,
+}: {
+  deadline: string;
+  serverTime: number;
+  onEnd?: () => void;
+}) {
+  const [remaining, setRemaining] = useState(
+    Math.max(0, Math.ceil((Date.parse(deadline) - serverTime) / 1000)),
+  );
+  const endCallback = useRef(onEnd);
   useEffect(() => {
-    const start = performance.now(); let ended = false;
-    const tick = () => { const seconds = Math.max(0, Math.ceil((Date.parse(deadline) - serverTime - (performance.now() - start)) / 1000)); setRemaining(seconds); if (!seconds && !ended) { ended = true; endCallback.current?.(); } };
-    tick(); const timer = setInterval(tick, 250); return () => clearInterval(timer);
+    endCallback.current = onEnd;
+  }, [onEnd]);
+  useEffect(() => {
+    const start = performance.now();
+    let ended = false;
+    const tick = () => {
+      const seconds = Math.max(
+        0,
+        Math.ceil((Date.parse(deadline) - serverTime - (performance.now() - start)) / 1000),
+      );
+      setRemaining(seconds);
+      if (!seconds && !ended) {
+        ended = true;
+        endCallback.current?.();
+      }
+    };
+    tick();
+    const timer = setInterval(tick, 250);
+    return () => clearInterval(timer);
   }, [deadline, serverTime]);
-  return <span className={`countdown ${remaining <= 5 ? "urgent" : ""}`}><Clock size={19}/>{Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</span>;
+  return (
+    <span className={`countdown ${remaining <= 5 ? "urgent" : ""}`}>
+      <Clock size={19} />
+      {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
+    </span>
+  );
 }
-function Options({ question, selected, setSelected, disabled, correctIds = [] }: { question: Question; selected: string[]; setSelected: (ids: string[]) => void; disabled?: boolean; correctIds?: string[] }) {
-  return <div className="play-options">{question.options.map((o, i) => <button key={o.id} className={`play-option option-${i % 4} ${selected.includes(o.id) ? "selected" : ""} ${correctIds.includes(o.id) ? "correct" : ""}`} disabled={disabled} aria-pressed={selected.includes(o.id)} onClick={() => setSelected(question.type === "MULTIPLE" ? selected.includes(o.id) ? selected.filter(id => id !== o.id) : [...selected, o.id] : [o.id])}><b>{"ABCDEF"[i]}</b><span>{o.text}</span>{(selected.includes(o.id) || correctIds.includes(o.id)) && <Check size={20}/>}</button>)}</div>;
+
+function Options({
+  question,
+  selected,
+  setSelected,
+  disabled,
+  correctIds = [],
+}: {
+  question: Question;
+  selected: string[];
+  setSelected: (ids: string[]) => void;
+  disabled?: boolean;
+  correctIds?: string[];
+}) {
+  return (
+    <div className="play-options">
+      {question.options.map((o, i) => (
+        <button
+          key={o.id}
+          className={`play-option option-${i % 4} ${selected.includes(o.id) ? "selected" : ""} ${correctIds.includes(o.id) ? "correct" : ""}`}
+          disabled={disabled}
+          aria-pressed={selected.includes(o.id)}
+          onClick={() =>
+            setSelected(
+              question.type === "MULTIPLE"
+                ? selected.includes(o.id)
+                  ? selected.filter((id) => id !== o.id)
+                  : [...selected, o.id]
+                : [o.id],
+            )
+          }
+        >
+          <b>{"ABCDEF"[i]}</b>
+          <span>{o.text}</span>
+          {(selected.includes(o.id) || correctIds.includes(o.id)) && <Check size={20} />}
+        </button>
+      ))}
+    </div>
+  );
 }
-function Celebration({ score, maxScore, title }: { score: number; maxScore: number; title: string }) {
-  useEffect(() => { playSound("finish"); }, []);
-  return <Card className="celebration"><div className="confetti" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ left: `${i * 7}%`, animationDelay: `${i * .11}s`, background: ["#8963ef", "#42c8a4", "#ffbd69"][i % 3] }}/>)}</div><motion.div initial={{ scale: .6 }} animate={{ scale: 1 }} className="trophy-medal"><Trophy size={48}/></motion.div><span className="eyebrow">KOLEJNY KROK DO PRZODU</span><h1>{score / maxScore >= .7 ? "Świetna robota!" : "Każda próba to postęp!"}</h1><p>{title}</p><strong className="big-score">{Math.round(score / maxScore * 100)}<span>%</span></strong><p className="muted">{score} z {maxScore} punktów</p><Link href="/dashboard" className="link-button">Wróć do panelu <ArrowRight size={17}/></Link></Card>;
+
+function Celebration({
+  score,
+  maxScore,
+  title,
+}: {
+  score: number;
+  maxScore: number;
+  title: string;
+}) {
+  useEffect(() => {
+    playSound("finish");
+  }, []);
+  return (
+    <Card className="celebration">
+      <div className="confetti" aria-hidden="true">
+        {Array.from({ length: 14 }, (_, i) => (
+          <i
+            key={i}
+            style={{
+              left: `${i * 7}%`,
+              animationDelay: `${i * 0.11}s`,
+              background: ["#8963ef", "#42c8a4", "#ffbd69"][i % 3],
+            }}
+          />
+        ))}
+      </div>
+      <motion.div initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="trophy-medal">
+        <Trophy size={48} />
+      </motion.div>
+      <span className="eyebrow">KOLEJNY KROK DO PRZODU</span>
+      <h1>{score / maxScore >= 0.7 ? "Świetna robota!" : "Każda próba to postęp!"}</h1>
+      <p>{title}</p>
+      <strong className="big-score">
+        {Math.round((score / maxScore) * 100)}
+        <span>%</span>
+      </strong>
+      <p className="muted">
+        {score} z {maxScore} punktów
+      </p>
+      <Link href="/dashboard" className="link-button">
+        Wróć do panelu <ArrowRight size={17} />
+      </Link>
+    </Card>
+  );
 }
+
 export function Assignment({ id }: { id: string }) {
-  const { data, error } = useResource<{ title: string; questions: number; timeLimitSeconds: number; maxAttempts: number; opensAt: string; closesAt: string | null; activeAttemptId: string | null; serverTime: number }>(`assignments/${id}`);
-  const [message, setMessage] = useState(""), [busy, setBusy] = useState(false); const router = useRouter();
-  if (error) return <p className="error">{error}</p>; if (!data) return <p>Ładowanie testu…</p>;
+  const { data, error } = useResource<{
+    title: string;
+    questions: number;
+    timeLimitSeconds: number;
+    maxAttempts: number;
+    opensAt: string;
+    closesAt: string | null;
+    activeAttemptId: string | null;
+    serverTime: number;
+  }>(`assignments/${id}`);
+  const [message, setMessage] = useState(""),
+    [busy, setBusy] = useState(false);
+  const router = useRouter();
+  if (error) return <p className="error">{error}</p>;
+  if (!data) return <p>Ładowanie testu…</p>;
   const closed = !!data.closesAt && Date.parse(data.closesAt) <= data.serverTime;
   const notOpen = Date.parse(data.opensAt) > data.serverTime;
-  return <div className="join-wrap"><Card className="join-card"><span className="feature-icon violet"><Sparkles size={30}/></span><span className="eyebrow">TWÓJ CZAS NA ODKRYCIA</span><h1>{data.title}</h1><div className="test-facts"><span><strong>{data.questions}</strong>pytań</span><span><strong>{Math.ceil(data.timeLimitSeconds / 60)}</strong>minut</span><span><strong>{data.maxAttempts}</strong>podejść</span></div><p className="muted">Od rozpoczęcia masz pełny czas na oddanie, także po wygaśnięciu linku. Czas biegnie również po zamknięciu strony. Zapisanych odpowiedzi nie można zmienić.</p><small>Dostępny od {new Date(data.opensAt).toLocaleString("pl-PL")}{data.closesAt ? ` do ${new Date(data.closesAt).toLocaleString("pl-PL")}` : ""}</small>{message && <p className="error" role="alert">{message}</p>}{closed && !data.activeAttemptId && <p className="notice">Link wygasł. Nie można rozpocząć nowego podejścia.</p>}<Button disabled={busy || (!data.activeAttemptId && (closed || notOpen))} className="primary-button" onClick={async () => { setBusy(true); try { const a = await api<{ id: string }>(`assignments/${id}`, "POST", {}); router.push(`/attempt/${a.id}`); } catch (e) { setMessage((e as Error).message); } finally { setBusy(false); } }}>{data.activeAttemptId ? "Wznów test" : closed ? "Link nieaktywny" : "Rozpocznij test"} <ArrowRight size={18}/></Button></Card></div>;
+  return (
+    <div className="join-wrap">
+      <Card className="join-card">
+        <span className="feature-icon violet">
+          <Sparkles size={30} />
+        </span>
+        <span className="eyebrow">TWÓJ CZAS NA ODKRYCIA</span>
+        <h1>{data.title}</h1>
+        <div className="test-facts">
+          <span>
+            <strong>{data.questions}</strong>pytań
+          </span>
+          <span>
+            <strong>{Math.ceil(data.timeLimitSeconds / 60)}</strong>minut
+          </span>
+          <span>
+            <strong>{data.maxAttempts}</strong>podejść
+          </span>
+        </div>
+        <p className="muted">
+          Od rozpoczęcia masz pełny czas na oddanie, także po wygaśnięciu linku. Czas biegnie
+          również po zamknięciu strony. Zapisanych odpowiedzi nie można zmienić.
+        </p>
+        <small>
+          Dostępny od {new Date(data.opensAt).toLocaleString("pl-PL")}
+          {data.closesAt ? ` do ${new Date(data.closesAt).toLocaleString("pl-PL")}` : ""}
+        </small>
+        {message && (
+          <p className="error" role="alert">
+            {message}
+          </p>
+        )}
+        {closed && !data.activeAttemptId && (
+          <p className="notice">Link wygasł. Nie można rozpocząć nowego podejścia.</p>
+        )}
+        <Button
+          disabled={busy || (!data.activeAttemptId && (closed || notOpen))}
+          className="primary-button"
+          onClick={async () => {
+            setBusy(true);
+            try {
+              const a = await api<{ id: string }>(`assignments/${id}`, "POST", {});
+              router.push(`/attempt/${a.id}`);
+            } catch (e) {
+              setMessage((e as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {data.activeAttemptId ? "Wznów test" : closed ? "Link nieaktywny" : "Rozpocznij test"}{" "}
+          <ArrowRight size={18} />
+        </Button>
+      </Card>
+    </div>
+  );
 }
-type AttemptData = { id: string; title: string; deadline: string; serverTime: number; finishedAt: string | null; score: number | null; maxScore: number; answers: Record<string, string[]>; questions: Question[] };
+
+type AttemptData = {
+  id: string;
+  title: string;
+  deadline: string;
+  serverTime: number;
+  finishedAt: string | null;
+  score: number | null;
+  maxScore: number;
+  answers: Record<string, string[]>;
+  questions: Question[];
+};
+
 export function Attempt({ id }: { id: string }) {
-  const { data, error, reload } = useResource<AttemptData>(`attempts/${id}`); const [selected, setSelected] = useState<string[]>([]), [busy, setBusy] = useState(false), [message, setMessage] = useState("");
-  if (error) return <p className="error">{error}</p>; if (!data) return <p>Otwieramy test…</p>;
-  const question = data.questions.find(q => !data.answers[q.id]); const answered = Object.keys(data.answers).length;
-  async function send(finish = false) { setBusy(true); setMessage(""); try { await api(`attempts/${id}`, "POST", finish ? { action: "finish" } : { action: "answer", questionId: question?.id, selectedIds: selected }); setSelected([]); reload(); } catch (e) { setMessage((e as Error).message); reload(); } finally { setBusy(false); } }
-  if (data.finishedAt) return <><Celebration title={data.title} score={data.score || 0} maxScore={data.maxScore}/><section className="panel-section"><h2>Twoje odpowiedzi</h2>{data.questions.map((q, i) => <Card key={q.id} className="review-question"><h3>{i + 1}. {q.text}</h3><Options question={q} selected={data.answers[q.id] || []} setSelected={() => {}} disabled correctIds={q.correctIds}/>{!data.answers[q.id] && <p className="muted">Bez odpowiedzi.</p>}</Card>)}</section></>;
-  return <div className="play-wrap"><div className="play-heading"><Link href="/dashboard" className="back-link">← Panel</Link><span>{data.title}</span><Countdown deadline={data.deadline} serverTime={data.serverTime} onEnd={() => void send(true)}/></div><div className="progress-track"><i style={{ width: `${answered / data.questions.length * 100}%` }}/></div><Card className="question-stage"><span className="eyebrow">PYTANIE {Math.min(answered + 1, data.questions.length)} Z {data.questions.length}</span><h1>{question ? question.text : "Wszystkie odpowiedzi zapisane!"}</h1>{question ? <><p className="muted">{question.type === "MULTIPLE" ? "Wybierz wszystkie poprawne odpowiedzi." : "Wybierz jedną odpowiedź."}</p><Options question={question} selected={selected} setSelected={setSelected} disabled={busy}/><Button className="primary-button" disabled={busy || !selected.length} onClick={() => send()}>Zapisz odpowiedź <ArrowRight size={18}/></Button></> : <><p className="muted">Zakończ test, żeby zobaczyć wynik.</p><Button className="primary-button" disabled={busy} onClick={() => send(true)}>Zakończ test i zobacz wynik <Trophy size={18}/></Button></>}{message && <p className="error" role="alert">{message}</p>}</Card>{question && <Button variant="ghost" disabled={busy} onClick={() => { if (window.confirm("Zakończyć test bez odpowiedzi na pozostałe pytania?")) void send(true); }}>Zakończ test wcześniej</Button>}</div>;
+  const { data, error, reload } = useResource<AttemptData>(`attempts/${id}`);
+  const [selected, setSelected] = useState<string[]>([]),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState("");
+  if (error) return <p className="error">{error}</p>;
+  if (!data) return <p>Otwieramy test…</p>;
+  const question = data.questions.find((q) => !data.answers[q.id]);
+  const answered = Object.keys(data.answers).length;
+  async function send(finish = false) {
+    setBusy(true);
+    setMessage("");
+    try {
+      await api(
+        `attempts/${id}`,
+        "POST",
+        finish
+          ? { action: "finish" }
+          : { action: "answer", questionId: question?.id, selectedIds: selected },
+      );
+      setSelected([]);
+      reload();
+    } catch (e) {
+      setMessage((e as Error).message);
+      reload();
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (data.finishedAt)
+    return (
+      <>
+        <Celebration title={data.title} score={data.score || 0} maxScore={data.maxScore} />
+        <section className="panel-section">
+          <h2>Twoje odpowiedzi</h2>
+          {data.questions.map((q, i) => (
+            <Card key={q.id} className="review-question">
+              <h3>
+                {i + 1}. {q.text}
+              </h3>
+              <Options
+                question={q}
+                selected={data.answers[q.id] || []}
+                setSelected={() => {}}
+                disabled
+                correctIds={q.correctIds}
+              />
+              {!data.answers[q.id] && <p className="muted">Bez odpowiedzi.</p>}
+            </Card>
+          ))}
+        </section>
+      </>
+    );
+  return (
+    <div className="play-wrap">
+      <div className="play-heading">
+        <Link href="/dashboard" className="back-link">
+          ← Panel
+        </Link>
+        <span>{data.title}</span>
+        <Countdown
+          deadline={data.deadline}
+          serverTime={data.serverTime}
+          onEnd={() => void send(true)}
+        />
+      </div>
+      <div className="progress-track">
+        <i style={{ width: `${(answered / data.questions.length) * 100}%` }} />
+      </div>
+      <Card className="question-stage">
+        <span className="eyebrow">
+          PYTANIE {Math.min(answered + 1, data.questions.length)} Z {data.questions.length}
+        </span>
+        <h1>{question ? question.text : "Wszystkie odpowiedzi zapisane!"}</h1>
+        {question ? (
+          <>
+            <p className="muted">
+              {question.type === "MULTIPLE"
+                ? "Wybierz wszystkie poprawne odpowiedzi."
+                : "Wybierz jedną odpowiedź."}
+            </p>
+            <Options
+              question={question}
+              selected={selected}
+              setSelected={setSelected}
+              disabled={busy}
+            />
+            <Button
+              className="primary-button"
+              disabled={busy || !selected.length}
+              onClick={() => send()}
+            >
+              Zapisz odpowiedź <ArrowRight size={18} />
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="muted">Zakończ test, żeby zobaczyć wynik.</p>
+            <Button className="primary-button" disabled={busy} onClick={() => send(true)}>
+              Zakończ test i zobacz wynik <Trophy size={18} />
+            </Button>
+          </>
+        )}
+        {message && (
+          <p className="error" role="alert">
+            {message}
+          </p>
+        )}
+      </Card>
+      {question && (
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            if (window.confirm("Zakończyć test bez odpowiedzi na pozostałe pytania?"))
+              void send(true);
+          }}
+        >
+          Zakończ test wcześniej
+        </Button>
+      )}
+    </div>
+  );
 }
-type LiveState = { id: string; pin: string; title: string; host: boolean; status: string; questionIndex: number; totalQuestions: number; deadline: string | null; serverTime: number; question: Question | null; correctIds: string[]; answered: boolean; myAnswer: string[]; myPoints: number | null; answeredCount: number; maxScore: number; ranking: { id: string; name: string; me: boolean; score: number }[] };
+
+type LiveState = {
+  id: string;
+  pin: string;
+  title: string;
+  host: boolean;
+  status: string;
+  questionIndex: number;
+  totalQuestions: number;
+  deadline: string | null;
+  serverTime: number;
+  question: Question | null;
+  correctIds: string[];
+  answered: boolean;
+  myAnswer: string[];
+  myPoints: number | null;
+  answeredCount: number;
+  maxScore: number;
+  ranking: { id: string; name: string; me: boolean; score: number }[];
+};
+
 export function LiveGame({ id }: { id: string }) {
-  const [state, setState] = useState<LiveState | null>(null), [error, setError] = useState(""), [connected, setConnected] = useState(false), [selected, setSelected] = useState<string[]>([]), [busy, setBusy] = useState(false), [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [state, setState] = useState<LiveState | null>(null),
+    [error, setError] = useState(""),
+    [connected, setConnected] = useState(false),
+    [selected, setSelected] = useState<string[]>([]),
+    [busy, setBusy] = useState(false),
+    [copied, setCopied] = useState<"code" | "link" | null>(null);
   const soundState = useRef("");
-  useEffect(() => { if (!state) return; const key = `${state.questionIndex}:${state.status}`; if (key === soundState.current) return; const previous = soundState.current; soundState.current = key; if (!previous) return; if (state.status === "FINISHED") playSound("finish"); else if (state.status === "RESULTS" && !state.host) playSound(state.myPoints ? "success" : "error"); }, [state]);
-  const socketRef = useRef<Socket | null>(null); const questionRef = useRef(-2);
   useEffect(() => {
-    let active = true; let socket: Socket | undefined;
+    if (!state) return;
+    const key = `${state.questionIndex}:${state.status}`;
+    if (key === soundState.current) return;
+    const previous = soundState.current;
+    soundState.current = key;
+    if (!previous) return;
+    if (state.status === "FINISHED") playSound("finish");
+    else if (state.status === "RESULTS" && !state.host)
+      playSound(state.myPoints ? "success" : "error");
+  }, [state]);
+  const socketRef = useRef<Socket | null>(null);
+  const questionRef = useRef(-2);
+  useEffect(() => {
+    let active = true;
+    let socket: Socket | undefined;
     async function connect() {
       try {
         const { ticket } = await api<{ ticket: string }>("socket-ticket", "POST", {});
         if (!active) return;
-        socket = io({ autoConnect: false, auth: { ticket }, reconnection: false }); socketRef.current = socket;
-        socket.on("connect", () => { setConnected(true); setError(""); socket?.emit("watch", id, (reply: { error?: string }) => { if (reply.error) setError(reply.error); }); });
-        socket.on("state", (next: LiveState) => { if (questionRef.current !== next.questionIndex) { setSelected([]); questionRef.current = next.questionIndex; } setState(next); setError(""); });
-        socket.on("disconnect", () => { setConnected(false); });
-        socket.on("connect_error", () => { setError("Nie można połączyć z rozgrywką. Użyj przycisku Połącz ponownie."); setConnected(false); });
-        socket.on("service-error", setError); socket.connect();
-      } catch (e) { if (active) setError((e as Error).message); }
+        socket = io({ autoConnect: false, auth: { ticket }, reconnection: false });
+        socketRef.current = socket;
+        socket.on("connect", () => {
+          setConnected(true);
+          setError("");
+          socket?.emit("watch", id, (reply: { error?: string }) => {
+            if (reply.error) setError(reply.error);
+          });
+        });
+        socket.on("state", (next: LiveState) => {
+          if (questionRef.current !== next.questionIndex) {
+            setSelected([]);
+            questionRef.current = next.questionIndex;
+          }
+          setState(next);
+          setError("");
+        });
+        socket.on("disconnect", () => {
+          setConnected(false);
+        });
+        socket.on("connect_error", () => {
+          setError("Nie można połączyć z rozgrywką. Użyj przycisku Połącz ponownie.");
+          setConnected(false);
+        });
+        socket.on("service-error", setError);
+        socket.connect();
+      } catch (e) {
+        if (active) setError((e as Error).message);
+      }
     }
     void connect();
-    return () => { active = false; socket?.disconnect(); socketRef.current = null; };
+    return () => {
+      active = false;
+      socket?.disconnect();
+      socketRef.current = null;
+    };
   }, [id]);
-  async function command(action: string) { if (!state || !socketRef.current || !connected) return; setBusy(true); setError(""); socketRef.current.timeout(10000).emit("command", { action, ...(action === "answer" ? { selectedIds: selected, questionIndex: state.questionIndex } : {}) }, (timeout: Error | null, reply: { error?: string }) => { setBusy(false); if (timeout) setError("Brak potwierdzenia. Sprawdź stan rozgrywki przed ponowieniem."); else if (reply.error) setError(reply.error); }); }
-  if (!state) return <Card className="empty"><div className="loader"/><h2>Łączymy się z rozgrywką</h2><p role="status">{error || "Przygotuj się na wspólną naukę."}</p>{error && <Button onClick={() => window.location.reload()}>Połącz ponownie</Button>}</Card>;
-  return <div className="live-wrap"><div className="play-heading"><span className="pill"><span className="status-dot"/>{connected ? "NA ŻYWO" : "ROZŁĄCZONO"}</span><strong>{state.title}</strong><span className="badge">Kod {state.pin}</span></div>{(!connected || error) && <p role="alert" className="notice">{error || "Połączenie przerwane."} <Button onClick={() => window.location.reload()}>Połącz ponownie</Button></p>}{state.status === "WAITING" ? <Card className="lobby"><span className="feature-icon violet"><Radio size={30}/></span><span className="eyebrow">{state.host ? "ZAPROŚ KLASĘ DO WSPÓLNEJ GRY" : "JESTEŚ W DOBRYM MIEJSCU"}</span><h1>{state.host ? "Wszystko zaczyna się tutaj." : "Za chwilę zaczynamy!"}</h1><p className="muted">{state.host ? "Uczniowie wpisują kod na stronie Dołącz do quizu." : "Czekamy, aż nauczyciel rozpocznie rozgrywkę."}</p><p className="speed-rule"><Zap size={18}/> Szybsza poprawna odpowiedź = więcej punktów. Od 100% do 50% wartości pytania.</p><strong className="lobby-pin">{state.pin}</strong><div className="button-row"><Button className="primary-button" onClick={() => navigator.clipboard.writeText(state.pin).then(() => { setCopied("code"); setError(""); }, () => setError("Zaznacz i skopiuj sześć cyfr widocznych na ekranie."))}>{copied === "code" ? "Kod skopiowany ✓" : "Kopiuj kod"}</Button><Button variant="outline" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/join?pin=${state.pin}`).then(() => { setCopied("link"); setError(""); }, () => setError("Skopiuj kod widoczny na ekranie."))}>{copied === "link" ? "Link skopiowany ✓" : "Kopiuj link do rozgrywki"}</Button></div><div className="participant-count"><Users size={19}/>{state.ranking.length} uczestników</div><div className="participants">{state.ranking.map(p => <motion.span initial={{ scale: .8 }} animate={{ scale: 1 }} key={p.id}><span className="avatar">{p.name.slice(0, 1)}</span>{p.name}</motion.span>)}</div>{state.host && <Button className="primary-button" disabled={busy || !connected || !state.ranking.length} onClick={() => command("next")}>Wszyscy gotowi? Zaczynamy <ArrowRight size={18}/></Button>}</Card> : state.status === "FINISHED" ? <><Card className="celebration"><span className="trophy-medal"><Trophy size={48}/></span><span className="eyebrow">FINAŁ WSPÓLNEJ PRZYGODY</span><h1>Brawo, drużyno!</h1><p className="muted">Każde pytanie to nowa wiedza. Oto Wasze wyniki.</p><div className="podium">{state.ranking.slice(0, 3).map((p, i) => <div key={p.id} className={`podium-place place-${i}`}><span>{["🥇", "🥈", "🥉"][i]}</span><strong>{p.name}</strong><small>{p.score} pkt</small></div>)}</div><Link className="link-button" href="/history">Zobacz historię <ArrowRight size={17}/></Link></Card></> : <Card className="question-stage"><div className="section-row"><span className="eyebrow">PYTANIE {state.questionIndex + 1} / {state.totalQuestions}</span>{state.status === "QUESTION" && state.deadline ? <Countdown deadline={state.deadline} serverTime={state.serverTime}/> : <span className="badge">Czas minął</span>}</div><h1>{state.question?.text}</h1>{state.question && <Options question={state.question} selected={state.answered ? state.myAnswer : selected} setSelected={setSelected} disabled={state.host || state.answered || state.status !== "QUESTION" || busy || !connected} correctIds={state.correctIds}/>}<p className="muted">{state.answeredCount} / {state.ranking.length} zapisanych odpowiedzi</p>{!state.host && state.status === "QUESTION" && <Button className="primary-button" disabled={busy || state.answered || !selected.length || !connected} onClick={() => command("answer")}>{state.answered ? "Odpowiedź zapisana ✓" : "Zatwierdź odpowiedź"}</Button>}{state.status === "RESULTS" && <p className="feedback">{state.host ? "Gotowi na kolejne pytanie?" : state.myPoints ? `Świetnie! +${state.myPoints} punktów` : "Kolejne pytanie to nowa szansa."}</p>}{state.host && state.status === "RESULTS" && <Button className="primary-button" disabled={busy || !connected} onClick={() => command("next")}>{state.questionIndex + 1 === state.totalQuestions ? "Pokaż wyniki końcowe" : "Następne pytanie"}<ArrowRight size={18}/></Button>}</Card>}{state.status !== "WAITING" && <Card className="ranking"><div className="section-row"><h2><Trophy size={22}/> Ranking</h2><span className="muted">{state.ranking.length} uczestników</span></div>{state.ranking.map((p, i) => <motion.div layout key={p.id} className={`ranking-row ${p.me ? "is-me" : ""}`}><span className="rank-position">{i + 1}</span><span className="avatar">{p.name.slice(0, 1)}</span><strong>{p.name}{p.me ? " (Ty)" : ""}</strong><span>{p.score} pkt</span></motion.div>)}</Card>}{state.host && state.status !== "FINISHED" && <Button variant="ghost" disabled={busy || !connected} onClick={() => { if (window.confirm("Zakończyć rozgrywkę dla wszystkich?")) void command("finish"); }}>Zakończ rozgrywkę wcześniej</Button>}</div>;
+  async function command(action: string) {
+    if (!state || !socketRef.current || !connected) return;
+    setBusy(true);
+    setError("");
+    socketRef.current.timeout(10000).emit(
+      "command",
+      {
+        action,
+        ...(action === "answer"
+          ? { selectedIds: selected, questionIndex: state.questionIndex }
+          : {}),
+      },
+      (timeout: Error | null, reply: { error?: string }) => {
+        setBusy(false);
+        if (timeout) setError("Brak potwierdzenia. Sprawdź stan rozgrywki przed ponowieniem.");
+        else if (reply.error) setError(reply.error);
+      },
+    );
+  }
+  if (!state)
+    return (
+      <Card className="empty">
+        <div className="loader" />
+        <h2>Łączymy się z rozgrywką</h2>
+        <p role="status">{error || "Przygotuj się na wspólną naukę."}</p>
+        {error && <Button onClick={() => window.location.reload()}>Połącz ponownie</Button>}
+      </Card>
+    );
+  return (
+    <div className="live-wrap">
+      <div className="play-heading">
+        <span className="pill">
+          <span className="status-dot" />
+          {connected ? "NA ŻYWO" : "ROZŁĄCZONO"}
+        </span>
+        <strong>{state.title}</strong>
+        <span className="badge">Kod {state.pin}</span>
+      </div>
+      {(!connected || error) && (
+        <p role="alert" className="notice">
+          {error || "Połączenie przerwane."}{" "}
+          <Button onClick={() => window.location.reload()}>Połącz ponownie</Button>
+        </p>
+      )}
+      {state.status === "WAITING" ? (
+        <Card className="lobby">
+          <span className="feature-icon violet">
+            <Radio size={30} />
+          </span>
+          <span className="eyebrow">
+            {state.host ? "ZAPROŚ KLASĘ DO WSPÓLNEJ GRY" : "JESTEŚ W DOBRYM MIEJSCU"}
+          </span>
+          <h1>{state.host ? "Wszystko zaczyna się tutaj." : "Za chwilę zaczynamy!"}</h1>
+          <p className="muted">
+            {state.host
+              ? "Uczniowie wpisują kod na stronie Dołącz do quizu."
+              : "Czekamy, aż nauczyciel rozpocznie rozgrywkę."}
+          </p>
+          <p className="speed-rule">
+            <Zap size={18} /> Szybsza poprawna odpowiedź = więcej punktów. Od 100% do 50% wartości
+            pytania.
+          </p>
+          <strong className="lobby-pin">{state.pin}</strong>
+          <div className="button-row">
+            <Button
+              className="primary-button"
+              onClick={() =>
+                navigator.clipboard.writeText(state.pin).then(
+                  () => {
+                    setCopied("code");
+                    setError("");
+                  },
+                  () => setError("Zaznacz i skopiuj sześć cyfr widocznych na ekranie."),
+                )
+              }
+            >
+              {copied === "code" ? "Kod skopiowany ✓" : "Kopiuj kod"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                navigator.clipboard
+                  .writeText(`${window.location.origin}/join?pin=${state.pin}`)
+                  .then(
+                    () => {
+                      setCopied("link");
+                      setError("");
+                    },
+                    () => setError("Skopiuj kod widoczny na ekranie."),
+                  )
+              }
+            >
+              {copied === "link" ? "Link skopiowany ✓" : "Kopiuj link do rozgrywki"}
+            </Button>
+          </div>
+          <div className="participant-count">
+            <Users size={19} />
+            {state.ranking.length} uczestników
+          </div>
+          <div className="participants">
+            {state.ranking.map((p) => (
+              <motion.span initial={{ scale: 0.8 }} animate={{ scale: 1 }} key={p.id}>
+                <span className="avatar">{p.name.slice(0, 1)}</span>
+                {p.name}
+              </motion.span>
+            ))}
+          </div>
+          {state.host && (
+            <Button
+              className="primary-button"
+              disabled={busy || !connected || !state.ranking.length}
+              onClick={() => command("next")}
+            >
+              Wszyscy gotowi? Zaczynamy <ArrowRight size={18} />
+            </Button>
+          )}
+        </Card>
+      ) : state.status === "FINISHED" ? (
+        <>
+          <Card className="celebration">
+            <span className="trophy-medal">
+              <Trophy size={48} />
+            </span>
+            <span className="eyebrow">FINAŁ WSPÓLNEJ PRZYGODY</span>
+            <h1>Brawo, drużyno!</h1>
+            <p className="muted">Każde pytanie to nowa wiedza. Oto Wasze wyniki.</p>
+            <div className="podium">
+              {state.ranking.slice(0, 3).map((p, i) => (
+                <div key={p.id} className={`podium-place place-${i}`}>
+                  <span>{["🥇", "🥈", "🥉"][i]}</span>
+                  <strong>{p.name}</strong>
+                  <small>{p.score} pkt</small>
+                </div>
+              ))}
+            </div>
+            <Link className="link-button" href="/history">
+              Zobacz historię <ArrowRight size={17} />
+            </Link>
+          </Card>
+        </>
+      ) : (
+        <Card className="question-stage">
+          <div className="section-row">
+            <span className="eyebrow">
+              PYTANIE {state.questionIndex + 1} / {state.totalQuestions}
+            </span>
+            {state.status === "QUESTION" && state.deadline ? (
+              <Countdown deadline={state.deadline} serverTime={state.serverTime} />
+            ) : (
+              <span className="badge">Czas minął</span>
+            )}
+          </div>
+          <h1>{state.question?.text}</h1>
+          {state.question && (
+            <Options
+              question={state.question}
+              selected={state.answered ? state.myAnswer : selected}
+              setSelected={setSelected}
+              disabled={
+                state.host || state.answered || state.status !== "QUESTION" || busy || !connected
+              }
+              correctIds={state.correctIds}
+            />
+          )}
+          <p className="muted">
+            {state.answeredCount} / {state.ranking.length} zapisanych odpowiedzi
+          </p>
+          {!state.host && state.status === "QUESTION" && (
+            <Button
+              className="primary-button"
+              disabled={busy || state.answered || !selected.length || !connected}
+              onClick={() => command("answer")}
+            >
+              {state.answered ? "Odpowiedź zapisana ✓" : "Zatwierdź odpowiedź"}
+            </Button>
+          )}
+          {state.status === "RESULTS" && (
+            <p className="feedback">
+              {state.host
+                ? "Gotowi na kolejne pytanie?"
+                : state.myPoints
+                  ? `Świetnie! +${state.myPoints} punktów`
+                  : "Kolejne pytanie to nowa szansa."}
+            </p>
+          )}
+          {state.host && state.status === "RESULTS" && (
+            <Button
+              className="primary-button"
+              disabled={busy || !connected}
+              onClick={() => command("next")}
+            >
+              {state.questionIndex + 1 === state.totalQuestions
+                ? "Pokaż wyniki końcowe"
+                : "Następne pytanie"}
+              <ArrowRight size={18} />
+            </Button>
+          )}
+        </Card>
+      )}
+      {state.status !== "WAITING" && (
+        <Card className="ranking">
+          <div className="section-row">
+            <h2>
+              <Trophy size={22} /> Ranking
+            </h2>
+            <span className="muted">{state.ranking.length} uczestników</span>
+          </div>
+          {state.ranking.map((p, i) => (
+            <motion.div layout key={p.id} className={`ranking-row ${p.me ? "is-me" : ""}`}>
+              <span className="rank-position">{i + 1}</span>
+              <span className="avatar">{p.name.slice(0, 1)}</span>
+              <strong>
+                {p.name}
+                {p.me ? " (Ty)" : ""}
+              </strong>
+              <span>{p.score} pkt</span>
+            </motion.div>
+          ))}
+        </Card>
+      )}
+      {state.host && state.status !== "FINISHED" && (
+        <Button
+          variant="ghost"
+          disabled={busy || !connected}
+          onClick={() => {
+            if (window.confirm("Zakończyć rozgrywkę dla wszystkich?")) void command("finish");
+          }}
+        >
+          Zakończ rozgrywkę wcześniej
+        </Button>
+      )}
+    </div>
+  );
 }
