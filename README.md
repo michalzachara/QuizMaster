@@ -1,106 +1,135 @@
-# QuizMaster
+# QuizMaster — opis projektu
 
-Platforma do tworzenia quizów, testów indywidualnych i rozgrywek na żywo.
-Autor: do uzupełnienia.
+QuizMaster to aplikacja internetowa do tworzenia quizów, prowadzenia rozgrywek
+na żywo i udostępniania testów indywidualnych. Łączy panel nauczyciela z przestrzenią
+ucznia, automatycznym sprawdzaniem odpowiedzi oraz historią wyników.
 
-## Funkcje
+Interfejs jest po polsku i działa w przeglądarce na komputerze, tablecie i telefonie.
 
-- Rejestracja z wyborem roli: uczeń lub nauczyciel. Bez administratora, zaproszeń i weryfikacji e-mail.
-- Logowanie Auth.js, hasła Argon2id, edycja profilu, zmiana hasła i wylogowanie.
-- Edytor pytań jednokrotnego i wielokrotnego wyboru oraz prawda/fałsz.
-- Wersje robocze, publikowanie, podgląd, kolejność pytań i duplikowanie quizów.
-- Test indywidualny z linkiem, terminem dostępności, limitem czasu i podejść.
-- Socket.IO: kod PIN, poczekalnia, pytania, czas serwerowy, ranking, podium i powrót po rozłączeniu.
-- Panele obu ról, rzeczywiste wyniki i historia w PostgreSQL.
-- Responsywny interfejs po polsku oraz motywy jasny, ciemny i neonowy.
-- Zalogowani użytkownicy są przekierowywani ze strony głównej, logowania i rejestracji do dashboardu.
+**Instalacja i konfiguracja:** [Instrukcja uruchomienia](README_URUCHOMIENIE.md).
 
-## Instalacja
+## Dla kogo jest aplikacja?
 
-Wymagany Node.js 24, npm i PostgreSQL (lokalnie lub Neon).
+Przy rejestracji użytkownik wybiera jedną z dwóch ról:
 
-```sh
-npm ci
+- **Nauczyciel** — tworzy i publikuje quizy, prowadzi rozgrywki, udostępnia testy
+  oraz przegląda wyniki swoich uczniów.
+- **Uczeń** — dołącza do rozgrywki kodem, otwiera test z linku i sprawdza własne wyniki.
+
+Nie ma roli administratora ani weryfikacji konta kodem e-mail. Do udziału w testach
+oraz rozgrywkach potrzebne jest konto ucznia.
+
+## Funkcje aplikacji
+
+### Konta i ustawienia
+
+- Rejestracja, logowanie i wylogowanie.
+- Edycja nazwy użytkownika oraz zmiana hasła z podaniem obecnego hasła.
+- Automatyczne przekierowanie zalogowanej osoby ze strony głównej, logowania
+  i rejestracji do panelu.
+- Trzy motywy: biały, ciemny i neonowy, wybierane ikonkami.
+- Włączanie dźwięków, regulacja głośności i odsłuch efektu.
+- Ustawienia animacji, większego tekstu i kompaktowego widoku.
+
+Preferencje wyglądu i dźwięku są zapisywane w przeglądarce.
+
+### Tworzenie i edycja quizów
+
+- Tytuł, opis, wersja robocza i publikowanie quizu.
+- Pytania jednokrotnego wyboru, wielokrotnego wyboru oraz prawda/fałsz.
+- Osobny czas odpowiedzi i maksymalna liczba punktów dla każdego pytania.
+- Dodawanie pytań bez ustawionego limitu ich liczby w edytorze.
+- Duplikowanie, usuwanie i zmiana kolejności pytań oraz podgląd quizu.
+- Duplikowanie całego quizu.
+- Wskazywanie błędnie wypełnionych pól i komunikaty o wyniku zapisu.
+
+Quizy z historią testów lub rozgrywek są chronione przed usunięciem. Treść udostępnionego
+testu i uruchomionej sesji jest utrwalana, więc późniejsza edycja quizu nie zmienia
+pytań w tych testach i sesjach.
+
+### Biblioteka quizów
+
+- Wyszukiwanie po tytule i opisie, również bez polskich znaków.
+- Filtrowanie quizów opublikowanych i roboczych.
+- Sortowanie według ostatniej edycji, tytułu lub liczby pytań.
+- Oznaczanie quizów gwiazdką i filtr „Tylko ulubione”.
+- Szybkie przejście do edycji, licznik wyników i czyszczenie filtrów.
+
+Ulubione są zapisywane osobno dla konta w danej przeglądarce. Nie synchronizują się
+między urządzeniami. Wyszukiwanie i filtrowanie działają na pobranej liście,
+bez dodatkowego zapytania do serwera przy każdym wpisanym znaku.
+
+### Rozgrywka na żywo
+
+Nauczyciel uruchamia opublikowany quiz i udostępnia sześciocyfrowy kod lub link.
+Uczniowie dołączają do poczekalni, a prowadzący uruchamia kolejne pytania.
+
+- Wspólna poczekalnia i lista uczestników.
+- Kopiowanie kodu i linku; możliwość wklejenia linku w pole kodu.
+- Odliczanie czasu synchronizowane z serwerem.
+- Punkty za poprawność i szybkość odpowiedzi.
+- Wyniki pytań, ranking i podium na zakończenie.
+- Możliwość powrotu do stanu gry po ponownym połączeniu.
+
+Za poprawną odpowiedź gracz otrzymuje od około 50% do 100% punktów pytania.
+Im szybciej odpowie, tym większy wynik. Błędna lub spóźniona odpowiedź daje 0 punktów.
+W pytaniach wielokrotnego wyboru wymagany jest dokładnie poprawny zestaw odpowiedzi.
+Czas i punkty oblicza serwer:
+
+```text
+punkty = round(maksymalne_punkty × (1 − 0,5 × czas_odpowiedzi / limit_czasu))
 ```
 
-Utwórz `.env` na podstawie `.env.example`. Ustaw `DATABASE_URL`, opcjonalny bezpośredni
-`DIRECT_URL`, losowy `AUTH_SECRET`, `AUTH_URL` i `PORT`. Nie commituj sekretów.
+Nowe osoby mogą dołączać tylko w poczekalni.
 
-```sh
-node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
-npm run db:migrate
-npm run build
-npm run start
-```
+### Testy indywidualne z linku
 
-Domyślny adres: http://localhost:3100. `AUTH_URL` musi odpowiadać dokładnemu adresowi,
-z którego korzystają przeglądarki. Dla innych urządzeń ustaw adres hosta dostępny
-w sieci. W produkcji używaj HTTPS i poprawnie skonfigurowanego reverse proxy.
-Do pracy lokalnej: `npm run dev`. Polecenia uruchamiają Next.js i Socket.IO razem.
+- Okno dostępności: początek i koniec możliwości rozpoczęcia testu.
+- Limit podejść oraz ustawienie ujawniania odpowiedzi po zakończeniu.
+- Automatyczny limit czasu: suma czasów wszystkich pytań + 5 minut.
+- Wznawianie rozpoczętego podejścia i zapis odpowiedzi.
+- Automatyczne sprawdzanie oraz podsumowanie wyniku.
 
-## Architektura
+Wygaśnięcie linku blokuje nowe podejścia. Osoba, która rozpoczęła wcześniej,
+zachowuje swój pełny czas na ukończenie i oddanie testu. Zamknięcie przeglądarki
+nie zatrzymuje licznika. W tym trybie punkty zależą od poprawności, a nie szybkości.
 
-Next.js App Router i TypeScript; React, Tailwind, komponenty oparte na shadcn/Base UI,
-Lucide, Motion, next-themes, React Hook Form i Zod. PostgreSQL obsługuje Prisma
-z adapterem pg. Jeden trwały proces Node (`server.ts`) obsługuje HTTP i Socket.IO
-na tym samym porcie. Nie należy wdrażać go jako zwykłej funkcji serverless.
-Instalacja na serwerze wymaga także tsx (obecnie w devDependencies, więc `npm ci`
-bez pomijania zależności developerskich).
+### Panel i strona główna
 
-Snapshot quizu utrwala treść testu/sesji niezależnie od późniejszej edycji źródła.
-Transakcje i blokady rekordów chronią czas, punktację i pojedynczy zapis odpowiedzi.
-Serwer odświeża stan rozgrywek co sekundę; klient wyświetla zsynchronizowany licznik.
-Przy wielu instancjach potrzebny będzie adapter pokojów i zaplanowana koordynacja
-aktualizacji. Obecna konfiguracja jest przeznaczona dla jednej instancji aplikacji.
+- Historia testów i rozgrywek oraz podsumowania wyników.
+- Wykres aktywności z wyborem 7 lub 14 dni i statystyki ukończenia testów.
+- Opis zasad, odpowiedzi na częste pytania i prezentacja trybów nauki.
+- Quiz demonstracyjny z trzema pytaniami, dostępny bez konta.
+- Symulator punktacji za szybkość i kalkulator czasu testu.
 
-## Zasady i bezpieczeństwo
+## Technologie i organizacja kodu
 
-- Wybór nauczyciela przy rejestracji jest świadomą regułą produktu. Nauczyciel ma dostęp wyłącznie do swoich quizów i wyników swoich testów/sesji.
-- Uczeń widzi własne wyniki i ranking rozgrywki, do której dołączył.
-- PIN/link stanowi zaproszenie do quizu. Nowi uczestnicy live mogą dołączyć tylko w poczekalni.
-- Poprawne odpowiedzi nie są wysyłane przed ich ujawnieniem. Punkty liczy serwer.
-- Zod, limity wielkości JSON, kontrola Origin i limity żądań w bazie chronią operacje.
-- Auth.js obsługuje sesje i zabezpieczenia logowania. Wylogowanie i zmiana hasła unieważniają sesje konta.
-- Role nie dają dostępu do haseł, sekretów ani bazy z przeglądarki.
-- Nie ma wysyłki poczty ani odzyskiwania hasła przez e-mail.
+Aplikacja korzysta z Next.js, React i TypeScript. Interfejs wykorzystuje Tailwind CSS,
+Base UI, Lucide, Motion oraz next-themes. Logowanie obsługuje Auth.js, hasła są haszowane
+przez Argon2, a dane wejściowe sprawdza Zod. PostgreSQL jest obsługiwany przez Prisma
+z adapterem `pg`. Rozgrywki na żywo korzystają z Socket.IO.
 
-## Testy
+| Katalog lub plik | Przeznaczenie                                             |
+| ---------------- | --------------------------------------------------------- |
+| `app/`           | Strony, API i style aplikacji                             |
+| `components/`    | Widoki, formularze i elementy interfejsu                  |
+| `lib/`           | Walidacja, dostęp do danych, punktacja i logika rozgrywek |
+| `prisma/`        | Schemat bazy i migracje                                   |
+| `server.ts`      | Wspólny serwer HTTP i Socket.IO                           |
+| `tests/`         | Testy jednostkowe                                         |
+| `scripts/`       | Skrypty pomocnicze i testy integracyjne                   |
 
-```sh
-npm test
-npm run lint
-npx tsc --noEmit
-npm run build
-# W drugim terminalu, przy uruchomionej aplikacji:
-npx tsx scripts/check-flows.ts
-```
+Widoki edytora i rozgrywki są ładowane na żądanie. Dane panelu pobierają się równolegle,
+a uczestnicy jednej gry współdzielą odczyt jej stanu w danym cyklu odświeżania.
+Kontrola uprawnień i odpowiedzi pozostaje osobna dla każdego gracza.
 
-Testy integracyjne korzystają z tymczasowych kont i quizu; w finally usuwają tylko
-utworzone przez siebie rekordy. Na docelowym wdrożeniu uruchamiaj je na osobnej
-bazie testowej. Wyniki i granice weryfikacji: `docs/VERIFICATION.md`.
+## Obecny zakres i ograniczenia
 
-Scenariusz: utwórz konto nauczyciela, utwórz i opublikuj quiz. Uruchom live albo
-wygeneruj test. W osobnej przeglądarce zaloguj ucznia i dołącz kodem/linkiem.
-Po zakończeniu sprawdź historię obu kont.
-
-## Struktura
-
-- `app/` — strony i API, w tym Auth.js i API v1.
-- `components/` — widoki, formularze, motywy i komponenty UI.
-- `lib/` — baza, walidacja, punktacja, kontrola dostępu, testy i rozgrywki.
-- `prisma/` — schemat i migracje.
-- `server.ts` — trwały serwer aplikacji oraz Socket.IO.
-- `tests/`, `scripts/` — testy jednostkowe i integracyjne.
-
-## Ograniczenia i dalszy rozwój
-
-Nie dodano uploadu obrazków, pytań tekstowych, pauzowania gry
-ani losowania kolejności. Podsumowania pokazują do 100 ostatnich rekordów.
-Nie wykonano testów obciążeniowych ani audytu penetracyjnego. Biblioteki wymagają
-okresowego przeglądu aktualizacji i podatności przed publicznym wdrożeniem.
-Nie ma trwałych kont demonstracyjnych ani fikcyjnych wyników w panelach.
-
-Praca odbywa się w gałęziach `codex/`, z logicznymi commitami. Nie wykonano push.
-Przed połączeniem z main należy zachować i osobno rozliczyć lokalne zmiany użytkownika.
-
-Punktacja na żywo: poprawny komplet odpowiedzi daje round(punkty × (1 − 0,5 × czas / limit)). Czas liczony jest na serwerze od rozpoczęcia pytania. Przed upływem limitu wynik maleje od 100% do 50%; błędne i spóźnione odpowiedzi dają 0. Testy indywidualne zachowują punktację za poprawność.
+- Podsumowania i biblioteka obejmują do 100 ostatnich rekordów danej kategorii.
+- Brak wysyłki e-maili, resetu hasła przez e-mail i trwałych kont demonstracyjnych.
+- Brak przesyłania obrazków do pytań, odpowiedzi tekstowych, pauzowania rozgrywki
+  i losowania kolejności pytań.
+- Brak limitu liczby pytań w edytorze nie oznacza nieograniczonego rozmiaru zapisu:
+  API przyjmuje formularz quizu do 16 MB.
+- Obecna konfiguracja serwera jest przygotowana dla jednej instancji Node.js.
+  Uruchomienie kilku instancji wymaga dodatkowej koordynacji Socket.IO.
